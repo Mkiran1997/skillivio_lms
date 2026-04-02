@@ -1,0 +1,104 @@
+   * {
+     box-sizing: border-box;
+     margin: 0;
+     padding: 0
+   }
+
+   html,
+   body {
+     height: 100%;
+     font-family: 'Segoe UI', system-ui, sans-serif
+   }
+
+   #root {
+     min-height: 100vh
+   }
+
+   #splash {
+     position: fixed;
+     inset: 0;
+     background: #2E3044;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     gap: 20px;
+     z-index: 99999;
+     transition: opacity 0.5s
+   }
+
+   #splash.out {
+     opacity: 0;
+     pointer-events: none
+   }
+
+   .slogo {
+     width: 68px;
+     height: 68px;
+     background: #2FBF71;
+     border-radius: 18px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     font-size: 30px;
+     font-weight: 900;
+     color: #fff;
+     animation: pulse 2s ease-in-out infinite
+   }
+
+   @keyframes pulse {
+
+     0%,
+     100% {
+       box-shadow: 0 0 32px rgba(47, 191, 113, .4)
+     }
+
+     50% {
+       box-shadow: 0 0 56px rgba(47, 191, 113, .7)
+     }
+   }
+
+   .sbar {
+     width: 260px;
+     height: 4px;
+     background: rgba(255, 255, 255, .12);
+     border-radius: 2px;
+     overflow: hidden
+   }
+
+   .sfill {
+     height: 100%;
+     background: linear-gradient(90deg, #2FBF71, #F4A800);
+     border-radius: 2px;
+     animation: load 3s ease-in-out forwards
+   }
+
+   @keyframes load {
+     0% {
+       width: 0
+     }
+
+     40% {
+       width: 50%
+     }
+
+     80% {
+       width: 88%
+     }
+
+     100% {
+       width: 100%
+     }
+   }
+
+   .err {
+     display: none;
+     background: #EF4444;
+     color: #fff;
+     border-radius: 10px;
+     padding: 14px 20px;
+     font-size: 13px;
+     max-width: 400px;
+     text-align: center;
+     line-height: 1.6
+   }
