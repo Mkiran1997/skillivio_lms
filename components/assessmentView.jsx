@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { QUESTIONS } from "../app/mockData";
 import { GLOBAL_CSS } from "../app/globalCss";
-import Toast from "./Toast";
-import AssessmentTimer from "./AssessmentTimer";
+import Toast from "./toast";
+import AssessmentTimer from "./assessmentTimer";
 
 function AssessmentView({ ...props }) {
     // var css = props.css, p = props.p, s = props.s, tenant = props.tenant,

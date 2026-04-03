@@ -2,7 +2,7 @@
 
 import { Providers } from "./providers";
 import "./globals.css";
-import Splash from "@/components/Splash";
+import Splash from "@/components/splash";
 
 export default function RootLayout({ children }) {
 

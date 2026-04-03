@@ -1,4 +1,4 @@
-import Toast from "./Toast";
+import Toast from "./toast";
 
 function AdminSidebar({...props}) {
   // var tab = props.tab, setTab = props.setTab, items = props.items, tenant = props.tenant,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import Course from "@/Server/model/course";
+import Course from "@/app/api/model/course";
 
 export async function GET() {
     try {

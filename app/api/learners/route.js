@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import learner from "@/Server/model/learner";
+import learner from "@/app/api/model/learner";
 
 export async function GET() {
     try {

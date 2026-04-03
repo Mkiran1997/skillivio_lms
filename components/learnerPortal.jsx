@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { usePagination } from "../app/utility";
 import { GLOBAL_CSS } from "../app/globalCss";
-import AdminSidebar from "./AdminSidebar";
-import StatCard from "./StatCard";
-import PaginationBar from "./PaginationBar";
-import EnrolmentForm from "./EnrolmentForm";
+import AdminSidebar from "./adminSidebar";
+import StatCard from "./statCard";
+import PaginationBar from "./paginationBar";
+import EnrolmentForm from "./enrolmentForm";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCourses } from "@/store/slices/courseSlice";
 

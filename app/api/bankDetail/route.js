@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import bankDetail from "@/Server/model/bankDetail";
+import bankDetail from "@/app/api/model/bankDetail";
 
 export async function GET() {
     try {
