@@ -20,13 +20,14 @@ function EditTenantForm({ tenant, onSave, onCancel }) {
         color: tenant.color || "#7C3AED",
         qctoNo: tenant.qctoNo || "",
         seta: tenant.seta || "Services SETA",
+        logo: tenant.logo || "",
         setupDate: tenant.setupDate || new Date().toISOString().split("T")[0],
         status: tenant.status || "Pending"
     });
 
     const [errors, setErrors] = useState({});
     const [step, setStep] = useState(1);
-    const dispatch=useDispatch()
+    const dispatch = useDispatch()
 
     function validate() {
         const e = {};
@@ -125,6 +126,10 @@ function EditTenantForm({ tenant, onSave, onCancel }) {
                                     <select value={form.seta} onChange={function (e) { var v = e.target.value; setForm(function (f) { return { ...f, seta: v }; }); }} style={{ border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", fontSize: 13, width: "100%", outline: "none" }}>
                                         {["AgriSETA", "BankSETA", "CATHSSETA", "CHIETA", "CETA", "ETDP SETA", "FoodBev SETA", "HWSETA", "INSETA", "LGSETA", "MICTS SETA", "MQA", "MERSETA", "PSETA", "SASSETA", "Services SETA", "TETA", "W&RSETA"].map(function (s) { return <option key={s}>{s}</option>; })}
                                     </select>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4, display: "block" }}>Logo</label>
+                                    <input value={form.logo} onChange={(e) => setForm(f => ({ ...f, logo: e.target.value }))} placeholder="" style={iSt("logo")} />
                                 </div>
                             </div>
                         </div>

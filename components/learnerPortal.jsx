@@ -7,6 +7,7 @@ import PaginationBar from "./paginationBar";
 import EnrolmentForm from "./enrolmentForm";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCourses } from "@/store/slices/courseSlice";
+import { fetchEnrollment } from "@/store/slices/enrollmentSlice";
 
 function LearnerPortal({ ...props }) {
     // var p = props.p, s = props.s, a = props.a, css = props.css,
@@ -18,11 +19,13 @@ function LearnerPortal({ ...props }) {
 
 
     const { Course, loading, error } = useSelector(state => state.course);
-    const disptch = useDispatch();
+    const { Enrollment } = useSelector(state => state.enrollment);
+
+    const dispatch = useDispatch();
 
     useEffect(() => {
-        disptch(fetchCourses())
-    }, [disptch]);
+        dispatch(fetchCourses())
+    }, [dispatch]);
 
 
     const { setUploadingForCourse, setCourseFiles, courseFiles, p, s, a, css, notify, notification, tenant, currentTenant, userRole, currentUser, logout, setView, courses, openCourse, uploadingForCourse } = props;
@@ -33,16 +36,22 @@ function LearnerPortal({ ...props }) {
     var myCourses = courses.filter(function (c) { return c.progress > 0 || c.id === "c3"; });
     var browseable = Course.filter(function (c) { return c.status === "PUBLISHED"; });
     var browsePag = usePagination(browseable, 6);
-    var myCourPag = usePagination(myCourses, 4);
+    const userCourses = Enrollment.map((course) => course.courseId);
+    console.log(userCourses)
+    var myCourPag = usePagination(userCourses,4);
 
     var SB_ITEMS = [
         { id: "home", icon: "🏠", label: "My Dashboard" },
-        { id: "courses", icon: "📚", label: "My Courses", badge: myCourses.length },
+        { id: "courses", icon: "📚", label: "My Courses", badge: userCourses.length },
         { id: "browse", icon: "🔍", label: "Browse Courses" },
-        { id: "enrolments", icon: "📋", label: "My Enrolments", badge: myEnrolments.length || undefined },
+        { id: "enrolments", icon: "📋", label: "My Enrolments", badge: Enrollment.length || undefined },
         { id: "certificates", icon: "🏆", label: "Certificates", badge: "1" },
         { id: "community", icon: "💬", label: "Community" },
     ];
+
+    useEffect(() => {
+        dispatch(fetchEnrollment());
+    }, [dispatch])
 
 
     const handleFileUpload = (event, courseId) => {
@@ -248,7 +257,7 @@ function LearnerPortal({ ...props }) {
                     <div className="fade">
                         <h1 style={{ ...css.h1, marginBottom: 24 }}>My Courses</h1>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
-                            {myCourPag.slice.map(function (c) {
+                            {myCourPag.slice?.map(function (c) {
                                 return (
                                     <div key={c.id} style={{ ...css.card, display: "flex", gap: 14 }}>
                                         <div style={{ width: 52, height: 52, background: p + "18", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{c.thumb}</div>
@@ -316,22 +325,22 @@ function LearnerPortal({ ...props }) {
                 {tab === "enrolments" && (
                     <div className="fade">
                         <h1 style={{ ...css.h1, marginBottom: 24 }}>My Enrolments</h1>
-                        {myEnrolments.length === 0
+                        {Enrollment.length === 0
                             ? <div style={{ ...css.card, textAlign: "center", padding: "48px" }}>
                                 <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
                                 <h3 style={css.h3}>No Enrolments Yet</h3>
                                 <p style={{ color: "#94a3b8", marginTop: 8, marginBottom: 20 }}>Browse courses and click Enroll to complete the QCTO enrolment form.</p>
                                 <button onClick={function () { setTab("browse"); }} style={css.btn(p)}>Browse Courses →</button>
                             </div>
-                            : myEnrolments.map(function (rec, i) {
+                            : Enrollment.map(function (rec, i) {
                                 var docKeys = ["certifiedId", "highestQual", "cv", "studyPermit", "workplaceConf", "entryAssessment"];
                                 var uploaded = docKeys.filter(function (k) { return rec.docs && rec.docs[k]; }).length;
                                 return (
                                     <div key={i} style={{ ...css.card, marginBottom: 12 }}>
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                                             <div>
-                                                <div style={{ fontWeight: 700, fontSize: 15 }}>{rec.course && rec.course.title}</div>
-                                                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>NQF {rec.secA && rec.secA.nqfLevel} • {rec.secA && rec.secA.credits} Credits • {rec.secA && rec.secA.mode}</div>
+                                                <div style={{ fontWeight: 700, fontSize: 15 }}>{rec.courseId && rec.courseId.title}</div>
+                                                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>NQF {rec.courseId && rec.courseId.nqf} • {rec.courseId && rec.courseId.credits} Credits • {rec.personal && rec.personal.mode}</div>
                                             </div>
                                             <span style={{ ...css.tag("#10B981") }}>✓ Enrolled</span>
                                         </div>
@@ -340,7 +349,7 @@ function LearnerPortal({ ...props }) {
                                                 <span style={{ fontWeight: 700, color: uploaded === docKeys.length ? "#10B981" : "#F59E0B" }}>{uploaded}/{docKeys.length} uploaded</span>
                                             </div>
                                             <div style={{ fontSize: 12 }}><span style={{ color: "#64748b" }}>POPIA: </span>
-                                                <span style={{ fontWeight: 700, color: rec.secG && rec.secG.consent ? "#10B981" : "#EF4444" }}>{rec.secG && rec.secG.consent ? "✓ Consented" : "⚠ Pending"}</span>
+                                                <span style={{ fontWeight: 700, color: rec.popia && rec.popia.consent ? "#10B981" : "#EF4444" }}>{rec.popia && rec.popia.consent ? "✓ Consented" : "⚠ Pending"}</span>
                                             </div>
                                         </div>
                                     </div>

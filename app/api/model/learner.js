@@ -9,5 +9,5 @@ const learnersSchema = new mongoose.Schema({
     credits: { type: Number, required: true },
 }, { timestamps: true });
 
-export default mongoose.models.learner || mongoose.model('learners', learnersSchema);
+export default mongoose.models.learners || mongoose.model('learners', learnersSchema);
     

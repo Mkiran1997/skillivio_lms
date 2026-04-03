@@ -12,6 +12,7 @@ const saTenantsSchema = new mongoose.Schema({
     phone: { type: String, required: true },
     qctoNo: { type: String, required: true },
     seta: { type: String, required: true },
+    logo: { type: String, required: true },
     status: { type: String, default: "Pending" },
     setupDate: { type: String, default: new Date().toISOString().split("T")[0] }
 }, { timestamps: true });

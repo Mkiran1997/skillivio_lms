@@ -11,6 +11,8 @@ import { deleteCourse, fetchCourses } from "../store/slices/courseSlice";
 import { fetchlearners } from "@/store/slices/learnerSlice";
 import { fetchbankdetails, updatebankdetails } from "@/store/slices/bankDetailSlice";
 import * as XLSX from 'xlsx';
+import { fetchEnrollment } from "@/store/slices/enrollmentSlice";
+import EnrolmentForm from "./enrolmentForm";
 // import StatCard from "./StatCard";
 // import PaginationBar from "./PaginationBar";
 // import ToggleSwitch from "./ToggleSwitch";
@@ -26,11 +28,12 @@ function AdminDashboard({ ...props }) {
     const { Course, loading, error } = useSelector(state => state.course);
     const { Learners } = useSelector(state => state.learners);
     const { bankdetails } = useSelector(state => state.bankdetail);
+    const { Enrollment } = useSelector(state => state.enrollment);
     const [isEditing, setIsEditing] = useState(false);
     const [localBankDetails, setLocalBankDetails] = useState({});
     const firstInputRef = useRef(null);
     const fileInputRef = useRef(null);
-
+    
     const dispatch = useDispatch();
 
     var [tab, setTab] = useState("dashboard");
@@ -48,16 +51,17 @@ function AdminDashboard({ ...props }) {
     var [newCohort, setNewCohort] = useState({ name: "", company: "", course: "", start: "", end: "" });
     var learnersPag = usePagination(Learners, 6);
     var enrolments = Object.values(ENROLMENT_STORE);
-    var enrolPag = usePagination(enrolments, 5);
+    var enrolPag = usePagination(Enrollment, 5);
 
     var published = Course.filter(function (c) { return c.status === "PUBLISHED"; });
     var totalEnrolled = Course.reduce(function (s, c) { return s + c.enrolled; }, 0);
+
 
     var SB_ITEMS = [
         { id: "dashboard", icon: "📊", label: "Dashboard" },
         { id: "courses", icon: "📚", label: "Courses", badge: limitedCourses.length },
         { id: "learners", icon: "👥", label: "Learners", badge: Learners.length },
-        { id: "enrolments", icon: "📋", label: "Enrolments", badge: enrolments.length || undefined },
+        { id: "enrolments", icon: "📋", label: "Enrolments", badge: Enrollment.length || undefined },
         { id: "analytics", icon: "📈", label: "Analytics" },
         { id: "payments", icon: "💳", label: "Payments" },
         { id: "certificates", icon: "🏆", label: "Certificates" },
@@ -77,6 +81,7 @@ function AdminDashboard({ ...props }) {
         dispatch(fetchCourses())
         dispatch(fetchlearners())
         dispatch(fetchbankdetails())
+        dispatch(fetchEnrollment())
     }, [dispatch]);
 
     useEffect(() => {
@@ -94,17 +99,17 @@ function AdminDashboard({ ...props }) {
     };
 
     function exportEnrolmentReport() {
-        if (enrolments.length === 0) { notify("No enrolment records yet", "error"); return; }
+        if (Enrollment.length === 0) { notify("No enrolment records yet", "error"); return; }
         var rows = [["Learner", "ID Number", "Email", "Course", "NQF", "Credits", "SAQA ID", "Intake", "Start", "Delivery", "POPIA", "Declaration", "Docs Uploaded", "Submitted"]];
-        enrolments.forEach(function (rec) {
+        Enrollment.forEach(function (rec) {
             var docKeys = ["certifiedId", "highestQual", "cv", "studyPermit", "workplaceConf", "entryAssessment"];
             var uploaded = docKeys.filter(function (k) { return rec.docs && rec.docs[k]; }).length;
             rows.push([
-                rec.secB && rec.secB.fullName || "",
-                rec.secB && rec.secB.idNumber || "",
-                rec.secB && rec.secB.email || "",
+                rec.personal && rec.personal.fullName || "",
+                rec.personal && rec.personal.idNumber || "",
+                rec.personal && rec.personal.email || "",
                 rec.course && rec.course.title || "",
-                rec.secA && rec.secA.nqfLevel || "",
+                rec && rec.nqfLevel || "",
                 rec.secA && rec.secA.credits || "",
                 rec.secA && rec.secA.saqaId || "",
                 rec.secA && rec.secA.intakeNo || "",
@@ -273,7 +278,7 @@ function AdminDashboard({ ...props }) {
                                         </div>
                                         <div>
                                             <label style={css.label}>Credits</label>
-                                            <input style={css.input} type="number" min="1" max="240" value={newCourse.credits}
+                                            <input style={css.input} type="number" min="1" max={240} value={newCourse.credits}
                                                 onChange={function (e) { var v = e.target.value; setNewCourse(function (n) { return { ...n, credits: v }; }); }}
                                                 placeholder="e.g. 10" />
                                         </div>
@@ -648,6 +653,10 @@ function AdminDashboard({ ...props }) {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
                             <div><h1 style={css.h1}>Enrolment Records</h1><p style={{ color: "#64748b", marginTop: 4, fontSize: 14 }}>QCTO-compliant enrolment forms with document status</p></div>
                             <div style={{ display: "flex", gap: 5 }}>
+                                <button style={{ background: "#21734615", color: "#217346", border: "1px solid #21734630", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                                    Add Learner Enrollment
+                                </button>
+
                                 <button onClick={exportEnrolmentReport}
                                     style={{ background: "#21734615", color: "#217346", border: "1px solid #21734630", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                                     📊 Export Report (.xlsx)
@@ -678,7 +687,7 @@ function AdminDashboard({ ...props }) {
                                 </>
                             </div>
                         </div>
-                        {enrolments.length === 0
+                        {Enrollment.length === 0
                             ? <div style={{ ...css.card, textAlign: "center", padding: "60px" }}>
                                 <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
                                 <h3 style={css.h3}>No Enrolment Forms Yet</h3>
@@ -693,14 +702,14 @@ function AdminDashboard({ ...props }) {
                                     <div key={i} style={{ ...css.card, marginBottom: 14 }}>
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                                             <div>
-                                                <div style={{ fontWeight: 800, fontSize: 15 }}>{rec.secB && rec.secB.fullName || "—"}</div>
-                                                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{rec.secB && rec.secB.idNumber} • {rec.secB && rec.secB.email}</div>
-                                                <div style={{ fontSize: 12, color: p, marginTop: 4, fontWeight: 600 }}>{rec.course && rec.course.title} — NQF {rec.secA && rec.secA.nqfLevel} • {rec.secA && rec.secA.credits} Credits</div>
+                                                <div style={{ fontWeight: 800, fontSize: 15 }}>{rec.personal && rec.personal.fullName || "—"}</div>
+                                                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{rec.personal && rec.personal.idNumber} • {rec.personal && rec.personal.email}</div>
+                                                <div style={{ fontSize: 12, color: p, marginTop: 4, fontWeight: 600 }}>{rec.courseId && rec.courseId.title} — NQF {rec.courseId && rec.courseId.nqf} • {rec.courseId && rec.courseId.credits} Credits</div>
                                             </div>
                                             <span style={{ ...css.tag("#10B981") }}>✓ Submitted</span>
                                         </div>
                                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 12 }}>
-                                            {[["SAQA ID", rec.secA && rec.secA.saqaId || "—"], ["Intake", rec.secA && rec.secA.intakeNo || "—"], ["POPIA", rec.secG && rec.secG.consent ? "✓ Yes" : "⚠ No"], ["Approved", rec.secH && rec.secH.approved || "—"]].map(function (pair) {
+                                            {[["SAQA ID", rec && rec.saqaId || "—"], ["Intake", rec && rec.intakeNo || "—"], ["POPIA", rec.popia && rec.popia.consent ? "✓ Yes" : "⚠ No"], ["Approved", rec.provider && rec.provider.approved || "—"]].map(function (pair) {
                                                 return <div key={pair[0]} style={{ background: "#f8fafc", borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600 }}>{pair[0]}</div><div style={{ fontSize: 12, fontWeight: 700, marginTop: 2 }}>{pair[1]}</div></div>;
                                             })}
                                         </div>
@@ -718,7 +727,7 @@ function AdminDashboard({ ...props }) {
                                 );
                             })
                         }
-                        {enrolments.length > 5 && <PaginationBar {...enrolPag} perPage={5} color={p} />}
+                        {Enrollment.length > 5 && <PaginationBar {...enrolPag} perPage={5} color={p} />}
                     </div>
                 )}
 
