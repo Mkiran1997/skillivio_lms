@@ -3,10 +3,6 @@ import { GLOBAL_CSS } from "../app/globalCss";
 import Toast from "./toast";
 
 function CertificateView({ ...props }) {
-    // var css = props.css, p = props.p, s = props.s, tenant = props.tenant,
-    //     activeCourse = props.activeCourse, notification = props.notification,
-    //     notify = props.notify, setView = props.setView;
-
 
     const { css, p, s, tenant, activeCourse, notification, notify, setView } = props;
 

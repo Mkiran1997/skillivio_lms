@@ -36,10 +36,10 @@ function SkillivioSuperAdmin({ ...props }) {
 
 
     // var tenantList = Object.values(tenants);
-    var totalMRR = tenants.filter(function (t) { return t.status === "Active"; }).reduce(function (s, t) { return s + t.mrr; }, 0);
-    var totalLrn = tenants.reduce(function (s, t) { return s + t.learners; }, 0);
-    var active = tenants.filter(function (t) { return t.status === "Active"; }).length;
-    var pending = tenants.filter(function (t) { return t.status === "Pending"; }).length;
+    var totalMRR = saTenants.filter(function (t) { return t.status === "Active"; }).reduce(function (s, t) { return s + t.mrr; }, 0);
+    var totalLrn = saTenants.reduce(function (s, t) { return s + t.learners; }, 0);
+    var active = saTenants.filter(function (t) { return t.status === "Active"; }).length;
+    var pending = saTenants.filter(function (t) { return t.status === "Pending"; }).length;
 
     var tierColor = { foundation: "#10B981", professional: "#7C3AED", enterprise: "#0EA5E9" };
 
@@ -68,6 +68,7 @@ function SkillivioSuperAdmin({ ...props }) {
             phone: form.phone || "",
             qctoNo: form.qctoNo || "",
             seta: form.seta || "",
+            logo: form.logo || "",
             setupDate: new Date().toISOString().split("T")[0]
         };
 
@@ -296,12 +297,12 @@ function SkillivioSuperAdmin({ ...props }) {
                                     })}
                                 </tr></thead>
                                 <tbody>
-                                    {tenants.map(function (t) {
+                                    {saTenants.map(function (t) {
                                         return (
                                             <tr key={t.id} style={{ borderBottom: "1px solid #f8fafc" }}>
                                                 <td style={{ padding: "12px" }}>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                        <div style={{ width: 34, height: 34, background: t.color, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: 14 }}>{t.name[0]}</div>
+                                                        <div style={{ width: 34, height: 34, background: t.color, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: 14 }}>{t.logo}</div>
                                                         <div><div style={{ fontWeight: 700, fontSize: 13 }}>{t.name}</div><div style={{ fontSize: 10, color: "#94a3b8" }}>{t.slug}.skillivio.com</div></div>
                                                     </div>
                                                 </td>
@@ -373,7 +374,7 @@ function SkillivioSuperAdmin({ ...props }) {
                             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Revenue by Tier</h3>
                             {Object.entries({ foundation: 1490, professional: 2990, enterprise: 5490 }).map(function (pair) {
                                 var tier = pair[0], rate = pair[1];
-                                var count = tenants.filter(function (t) { return t.tier === tier && t.status === "Active"; }).length;
+                                var count = saTenants.filter(function (t) { return t.tier === tier && t.status === "Active"; }).length;
                                 var rev = count * rate;
                                 return (
                                     <div key={tier} style={{ marginBottom: 14 }}>
@@ -397,7 +398,7 @@ function SkillivioSuperAdmin({ ...props }) {
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
                             <StatCard icon="💰" value={"R" + totalMRR.toLocaleString()} label="Total MRR" color={SKP} />
                             <StatCard icon="📈" value={"R" + (totalMRR * 12).toLocaleString()} label="ARR (Projected)" color="#10B981" />
-                            <StatCard icon="🏢" value={active + "/" + tenants.length} label="Active / Total" color="#6366F1" />
+                            <StatCard icon="🏢" value={active + "/" + saTenants.length} label="Active / Total" color="#6366F1" />
                             <StatCard icon="⏳" value={pending || 0} label="Pending EFTs" color="#F59E0B" />
                         </div>
 
@@ -452,7 +453,7 @@ function SkillivioSuperAdmin({ ...props }) {
                         {/* ── Tenant billing status ── */}
                         <div style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
                             <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Tenant Billing Status</h3>
-                            {Object.values(tenants).slice(0, 4).map(function (t) {
+                            {Object.values(saTenants).slice(0, 4).map(function (t) {
                                 var tierColor = { foundation: "#10B981", professional: "#7C3AED", enterprise: "#0EA5E9" }[t.tier] || "#94a3b8";
                                 return (
                                     <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: "1px solid #f8fafc" }}>

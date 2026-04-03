@@ -8,7 +8,7 @@ function NewTenantForm({ ...props }) {
     var onSave = props.onSave, onCancel = props.onCancel;
     var p = "#2FBF71";
     var [step, setStep] = useState(1);
-    var [form, setForm] = useState({ name: "", slug: "", tier: "professional", contact: "", email: "", phone: "", domain: "", color: "#7C3AED", qctoNo: "", seta: "Services SETA", setupDate: new Date().toISOString().split("T")[0] });
+    var [form, setForm] = useState({ name: "", slug: "", tier: "professional", contact: "", email: "", phone: "", domain: "", color: "#7C3AED", qctoNo: "", seta: "Services SETA", logo: "", setupDate: new Date().toISOString().split("T")[0] });
     var [errors, setErrors] = useState({});
 
     function validate() {
@@ -86,6 +86,11 @@ function NewTenantForm({ ...props }) {
                                     <select value={form.seta} onChange={function (e) { var v = e.target.value; setForm(function (f) { return { ...f, seta: v }; }); }} style={{ border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", fontSize: 13, width: "100%", outline: "none" }}>
                                         {["AgriSETA", "BankSETA", "CATHSSETA", "CHIETA", "CETA", "ETDP SETA", "FoodBev SETA", "HWSETA", "INSETA", "LGSETA", "MICTS SETA", "MQA", "MERSETA", "PSETA", "SASSETA", "Services SETA", "TETA", "W&RSETA"].map(function (s) { return <option key={s}>{s}</option>; })}
                                     </select>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4, display: "block" }}>Logo</label>
+                                    <input value={form.logo} onChange={function (e) { var v = e.target.value; setForm(function (f) { return { ...f, logo: v }; }); }} placeholder="" style={iSt("logo")} />
+
                                 </div>
                             </div>
                         </div>

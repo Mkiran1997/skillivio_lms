@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ENROLMENT_STORE } from "../app/mockData";
 import { GLOBAL_CSS } from "../app/globalCss";
+import { useDispatch, useSelector } from "react-redux";
+import { createEnrollment } from "@/store/slices/enrollmentSlice";
 
 
 
@@ -38,6 +40,8 @@ function EnrolmentForm({ ...props }) {
 
         notify(DOC_LABELS[key] + " uploaded!");
     }
+    const { Enrollment } = useSelector(state => state.enrollment);
+    const dispatch = useDispatch();
 
     function handleSubmit() {
         if (!secB.fullName) { notify("Full name required in Section B", "error"); setStep("B"); return; }
@@ -47,7 +51,31 @@ function EnrolmentForm({ ...props }) {
         setSubmitting(true);
         var record = { course: course, secA: secA, secB: secB, secC: secC, secD: secD, secE: secE, secF: secF, secG: secG, secH: secH, docs: docs, submittedAt: new Date().toISOString() };
         var key = (learnerUser ? learnerUser.id : "u") + "_" + course.id;
-        ENROLMENT_STORE[key] = record;
+        const enrollmentRecord = {
+            courseId: course._id,          // ObjectId of course
+            userId: "69cf9f8735f8f030ce7fcb7e", // ObjectId of user (or null if guest)
+            saqaId: secA.saqaId,
+            intakeNo: secA.intakeNo,
+            startDate: secA.startDate ? new Date(secA.startDate) : new Date(),
+            endDate: secA.endDate ? new Date(secA.endDate) : null,
+            mode: secA.mode,
+
+            personal: { ...secB },
+            employment: { ...secC },
+            enteyRequest: [...secD],
+            assessment: {
+                ...secE,
+                dateCond: secE.dateCond ? new Date(secE.dateCond) : null
+            },
+            declaration: { ...secF },
+            popia: { ...secG },
+            provider: { ...secH },
+            docs: { ...docs },
+            submittedAt: new Date()
+        };
+        // ENROLMENT_STORE[key] = record;
+        dispatch(createEnrollment(enrollmentRecord));
+
         setTimeout(function () { setSubmitting(false); onSubmit(record); }, 700);
     }
 
@@ -425,6 +453,7 @@ function EnrolmentForm({ ...props }) {
                     </div>
                 </div>
             </div>
+            
         </div>
     );
 }

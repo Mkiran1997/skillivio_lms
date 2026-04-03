@@ -8,4 +8,4 @@ const bankDetailSchema = new mongoose.Schema({
     payShapId: { type: String, required: true },
 }, { timestamps: true });
 
-export default mongoose.models.BankDetail || mongoose.model('bankDetail', bankDetailSchema);
+export default mongoose.models.bankDetail || mongoose.model('bankDetail', bankDetailSchema);
