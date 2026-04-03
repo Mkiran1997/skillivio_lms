@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { COURSES, TENANTS } from "../app/mockData";
 import { useTheme } from "../app/utility";
-import LandingPage from "./LandingPage";
-import AdminDashboard from "./AdminDashboard";
-import AssessmentView from "./AssessmentView";
-import LoginPage from "./LoginPage";
-import LearnerPortal from "./LearnerPortal";
-import SkillivioSuperAdmin from "./SkillivioSuperAdmin";
-import CoursePlayer from "./CoursePlayer";
-import CertificateView from "./CertificateView";
+import LandingPage from "./landingPage";
+import AdminDashboard from "./adminDashboard";
+import AssessmentView from "./assessmentView";
+import LoginPage from "./loginPage";
+import LearnerPortal from "./learnerPortal";
+import SkillivioSuperAdmin from "./skillivioSuperAdmin";
+import CoursePlayer from "./coursePlayer";
+import CertificateView from "./certificateView";
 import { createCourses, fetchCourses, updateCourse } from "../store/slices/courseSlice";
 import { useDispatch, useSelector } from "react-redux";
 

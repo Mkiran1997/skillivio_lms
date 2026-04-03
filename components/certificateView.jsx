@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { GLOBAL_CSS } from "../app/globalCss";
-import Toast from "./Toast";
+import Toast from "./toast";
 
 function CertificateView({ ...props }) {
     // var css = props.css, p = props.p, s = props.s, tenant = props.tenant,

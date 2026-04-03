@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { TIER_DATA } from "../app/mockData";
 import { GLOBAL_CSS } from "../app/globalCss";
-import Toast from "./Toast";
-import StatCard from "./StatCard";
-import TierDemoView from "./TierDemoView";
-import NewTenantForm from "./NewTenantForm";
+import Toast from "./toast";
+import StatCard from "./statCard";
+import TierDemoView from "./tierDemoView";
+import NewTenantForm from "./newTenantForm";
 import { useDispatch, useSelector } from "react-redux";
 import { createsaTenants, fetchsaTenants, updatesaTenants } from "@/store/slices/saTenantSlice";
-import EditTenantForm from "./EditTenantForm";
+import EditTenantForm from "./editTenantForm";
 
 
 function SkillivioSuperAdmin({ ...props }) {

@@ -1,6 +1,6 @@
 import { GLOBAL_CSS } from '../app/globalCss';
 import { TENANTS } from "../app/mockData";
-import Toast from './Toast';
+import Toast from './toast';
 
 
 function LandingPage({ ...props }) {
