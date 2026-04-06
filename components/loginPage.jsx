@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getUser } from "../app/utility";
 import { GLOBAL_CSS } from "../app/globalCss";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUsers } from "@/store/slices/authSlice";
+import { current } from "@reduxjs/toolkit";
 
 
 function LoginPage({ ...props }) {
-    var onLogin = props.onLogin, onBack = props.onBack, tenant = props.tenant, p = props.p, s = props.s;
+    var onLogin = props.onLogin, onBack = props.onBack, tenant = props.tenant, p = props.p, s = props.s, currentTenant = props.currentTenant;
     var [email, setEmail] = useState("");
     var [pw, setPw] = useState("");
     var [showPw, setShowPw] = useState(false);
@@ -12,19 +15,29 @@ function LoginPage({ ...props }) {
     var [loading, setLoading] = useState(false);
     var [focused, setFocused] = useState("");
 
+    const { User } = useSelector(state => state.user);
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(fetchUsers());
+    }, [dispatch])
+
     function attempt() {
         if (!email || !pw) { setErr("Please enter your email and password."); return; }
         setLoading(true); setErr("");
         setTimeout(function () {
-            var user = getUser(email, pw);
+            var user = getUser(User, email, pw);
             if (user) { onLogin(user); }
             else { setErr("Incorrect email or password. Please try again."); setLoading(false); }
         }, 600);
     }
-
-    var demos = [
+    var demos = currentTenant === "skillivio" ? [
         { label: "👤 Learner", e: "thabo@example.co.za", pw: "Learner@123", c: "#10B981" },
         { label: "🛡 Admin", e: "admin@skillivio.co.za", pw: "Admin@2026!", c: p },
+        { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
+    ] : [
+        { label: "👤 Learner", e: "thabo@example.co.za", pw: "Learner@123", c: "#10B981" },
+        { label: "🛡 Admin", e: "admin@acme.co.za", pw: "Acme@2026!", c: p },
         { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
     ];
     const demosToShow = demos.filter((d, index) => {
@@ -48,11 +61,21 @@ function LoginPage({ ...props }) {
             <style>{GLOBAL_CSS}</style>
             <div style={{ width: "100%", maxWidth: 420 }}>
                 <div style={{ textAlign: "center", marginBottom: 24, animation: "fadeIn 0.4s ease" }}>
-                    <div style={{
-                        width: 64, height: 64, background: p, borderRadius: 18, display: "flex", alignItems: "center",
-                        justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", margin: "0 auto 14px",
-                        boxShadow: "0 8px 24px " + p + "44"
-                    }}>{tenant.logo}</div>
+                    {
+                        currentTenant === "skillivio" ?
+                            <img src='/logo/skillivioLogo.jpeg' alt='skillivio' style={{
+                                width: 64, height: 64, background: p, borderRadius: 18, display: "flex", alignItems: "center",
+                                justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", margin: "0 auto 14px",
+                                boxShadow: "0 8px 24px " + p + "44"
+                            }} />
+                            :
+
+                            <div style={{
+                                width: 64, height: 64, background: p, borderRadius: 18, display: "flex", alignItems: "center",
+                                justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", margin: "0 auto 14px",
+                                boxShadow: "0 8px 24px " + p + "44"
+                            }}>{tenant.logo}</div>
+                    }
                     <div style={{ color: "#fff", fontWeight: 800, fontSize: 22 }}>{tenant.name}</div>
                     <div style={{ color: p, fontSize: 12, marginTop: 3 }}>{tenant.tagline}</div>
                 </div>

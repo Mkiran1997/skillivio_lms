@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { exportXLSX, usePagination } from "../app/utility";
 import { ENROLMENT_STORE, LEARNERS } from "../app/mockData";
 import { GLOBAL_CSS } from "../app/globalCss";
@@ -20,8 +20,9 @@ import EnrolmentForm from "./enrolmentForm";
 
 function AdminDashboard({ ...props }) {
 
+
     const { courses, openCourse, setCourses, publishCourse, notify, notification, css,
-        tenant, currentTenant, userRole, currentUser, logout, setView, courseBuilderOpen,
+        tenant, currentTenant, userRole, currentUser, logout, setView, courseBuilderOpen, BLANK_COURSE,
         setCourseBuilderOpen, newCourse, setNewCourse, createCourse, openCourseEditor,
         courseModules, setCourseModules, activeModuleIdx, setActiveModuleIdx, editingCourse, s, a, p, setEditingCourse, saveCourse, setUploadingForCourse } = props;
 
@@ -31,14 +32,18 @@ function AdminDashboard({ ...props }) {
     const { Enrollment } = useSelector(state => state.enrollment);
     const [isEditing, setIsEditing] = useState(false);
     const [localBankDetails, setLocalBankDetails] = useState({});
+    const [openEnrolmentForm, setOpenEnrolmentForm] = useState(false);
     const firstInputRef = useRef(null);
     const fileInputRef = useRef(null);
-    
+
     const dispatch = useDispatch();
 
     var [tab, setTab] = useState("dashboard");
     var tenantLimit = currentTenant === "acme" ? 5 : currentTenant === "techpro" ? 10 : Infinity;
-    var limitedCourses = Course.slice(0, tenantLimit);
+    const AdminCourse = useMemo(() => {
+        return Course.filter((c) => c.type === currentUser.tenantId.slug)
+    }, [Course, currentUser])
+    var limitedCourses = AdminCourse.slice(0, tenantLimit);
     var coursesPag = usePagination(limitedCourses, 5);
 
     var [cohorts, setCohorts] = useState([
@@ -51,17 +56,17 @@ function AdminDashboard({ ...props }) {
     var [newCohort, setNewCohort] = useState({ name: "", company: "", course: "", start: "", end: "" });
     var learnersPag = usePagination(Learners, 6);
     var enrolments = Object.values(ENROLMENT_STORE);
-    var enrolPag = usePagination(Enrollment, 5);
-
-    var published = Course.filter(function (c) { return c.status === "PUBLISHED"; });
-    var totalEnrolled = Course.reduce(function (s, c) { return s + c.enrolled; }, 0);
+    
+    var published = AdminCourse.filter(function (c) { return c.status === "PUBLISHED"; });
+    var totalEnrolled = Enrollment.filter((enrol) =>  enrol.courseId.type === currentUser.tenantId.slug)
+    var enrolPag = usePagination(totalEnrolled, 5);
 
 
     var SB_ITEMS = [
         { id: "dashboard", icon: "📊", label: "Dashboard" },
         { id: "courses", icon: "📚", label: "Courses", badge: limitedCourses.length },
         { id: "learners", icon: "👥", label: "Learners", badge: Learners.length },
-        { id: "enrolments", icon: "📋", label: "Enrolments", badge: Enrollment.length || undefined },
+        { id: "enrolments", icon: "📋", label: "Enrolments", badge: totalEnrolled.length || undefined },
         { id: "analytics", icon: "📈", label: "Analytics" },
         { id: "payments", icon: "💳", label: "Payments" },
         { id: "certificates", icon: "🏆", label: "Certificates" },
@@ -165,8 +170,8 @@ function AdminDashboard({ ...props }) {
 
                 const secA = {
                     saqaId: row["SAQA ID"] || "",
-                    nqfLevel: Course.nqf,
-                    credits: Course.credits,
+                    nqfLevel: AdminCourse.nqf,
+                    credits: AdminCourse.credits,
                     intakeNo: row["Intake No"] || "",
                     startDate: row["Start Date"] || new Date().toISOString().split("T")[0],
                     endDate: row["End Date"] || "",
@@ -194,11 +199,11 @@ function AdminDashboard({ ...props }) {
             });
 
             notify(` learners imported successfully!`);
-            console.log(ENROLMENT_STORE);
         };
 
         reader.readAsArrayBuffer(file);
     };
+
 
     return (
         <div style={{ display: "flex", ...css.page }}>
@@ -293,7 +298,7 @@ function AdminDashboard({ ...props }) {
                                                 placeholder="e.g. 57712" />
                                         </div>
                                         <div style={{ marginBottom: 14 }}><label style={css.label}>Accrediting Body</label>
-                                            <select defaultValue="Services SETA" style={css.input}>
+                                            <select defaultValue="Services SETA" style={css.input} onChange={function (e) { var v = e.target.value; setNewCourse(function (n) { return { ...n, setaAffiliation: v }; }); }}>
                                                 {["QCTO (Direct)", "AgriSETA", "BankSETA", "CATHSSETA", "CHIETA", "ETDP SETA", "FoodBev SETA", "HWSETA", "INSETA", "LGSETA", "MerSETA", "MICTS SETA", "MQA", "PSETA", "SASSETA", "Services SETA", "TETA", "W&RSETA", "OTHER"].map(function (s) { return <option key={s}>{s}</option>; })}
                                             </select>
                                         </div>
@@ -492,6 +497,7 @@ function AdminDashboard({ ...props }) {
                                     onClick={async function () {
                                         if (window.confirm("Delete this course? This cannot be undone.")) {
                                             try {
+
                                                 // Dispatch the deleteCourse thunk
                                                 await dispatch(deleteCourse(editingCourse._id)).unwrap();
 
@@ -534,15 +540,15 @@ function AdminDashboard({ ...props }) {
                     <div className="fade">
                         <h1 style={{ ...css.h1, marginBottom: 24 }}>Dashboard</h1>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
-                            <StatCard icon="📚" value={Course.length} label="Total Courses" color={p} />
-                            <StatCard icon="👥" value={totalEnrolled.toLocaleString()} label="Total Learners" color="#10B981" />
+                            <StatCard icon="📚" value={AdminCourse.length} label="Total Courses" color={p} />
+                            <StatCard icon="👥" value={totalEnrolled.length.toLocaleString()} label="Total Learners" color="#10B981" />
                             <StatCard icon="📈" value={published.length} label="Published" color={a} />
                             <StatCard icon="💰" value="R47,850" label="Revenue MTD" color="#8B5CF6" />
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                             <div style={css.card}>
                                 <h3 style={{ ...css.h3, marginBottom: 14 }}>Recent Courses</h3>
-                                {Course.slice(0, 4).map(function (c) {
+                                {AdminCourse.slice(0, 4).map(function (c) {
                                     return (
                                         <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f8fafc" }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -653,8 +659,8 @@ function AdminDashboard({ ...props }) {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
                             <div><h1 style={css.h1}>Enrolment Records</h1><p style={{ color: "#64748b", marginTop: 4, fontSize: 14 }}>QCTO-compliant enrolment forms with document status</p></div>
                             <div style={{ display: "flex", gap: 5 }}>
-                                <button style={{ background: "#21734615", color: "#217346", border: "1px solid #21734630", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                                    Add Learner Enrollment
+                                <button onClick={() => setOpenEnrolmentForm(true)} style={{ background: "#21734615", color: "#217346", border: "1px solid #21734630", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                                    + Add Learner Enrollment
                                 </button>
 
                                 <button onClick={exportEnrolmentReport}
@@ -735,20 +741,21 @@ function AdminDashboard({ ...props }) {
                     <div className="fade">
                         <h1 style={{ ...css.h1, marginBottom: 24 }}>Analytics</h1>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 20 }}>
-                            <StatCard icon="👥" value={totalEnrolled.toLocaleString()} label="Total Enrolments" color={p} />
+                            <StatCard icon="👥" value={totalEnrolled.length.toLocaleString()} label="Total Enrolments" color={p} />
                             <StatCard icon="🏆" value="89%" label="Completion Rate" color="#10B981" />
                             <StatCard icon="📝" value="76%" label="Avg Pass Rate" color={a} />
                             <StatCard icon="⭐" value="247" label="Credits Awarded" color="#8B5CF6" />
                         </div>
                         <div style={{ ...css.card }}>
                             <h3 style={{ ...css.h3, marginBottom: 16 }}>Course Performance</h3>
-                            {Course.filter(function (c) { return c.status === "PUBLISHED"; }).map(function (c) {
-                                var pct = Math.round((c.enrolled / 500) * 100);
+                            {AdminCourse.filter(function (c) { return c.status === "PUBLISHED"; }).map(function (c) {
+                                const enrolled = Enrollment.filter((enroll) => enroll.courseId._id === c._id).length;
+                                var pct = Math.round((enrolled / 500) * 100);
                                 return (
                                     <div key={c.id} style={{ marginBottom: 14 }}>
                                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                                             <span style={{ fontSize: 13 }}>{c.thumb} {c.title}</span>
-                                            <span style={{ fontSize: 13, fontWeight: 700, color: p }}>{c.enrolled} enrolled</span>
+                                            <span style={{ fontSize: 13, fontWeight: 700, color: p }}>{enrolled} enrolled</span>
                                         </div>
                                         <div style={{ height: 8, background: "#f1f5f9", borderRadius: 4, overflow: "hidden" }}>
                                             <div style={{ height: "100%", width: pct + "%", background: p, borderRadius: 4 }} />
@@ -757,6 +764,7 @@ function AdminDashboard({ ...props }) {
                                 );
                             })}
                         </div>
+
                     </div>
                 )}
 
@@ -964,6 +972,7 @@ function AdminDashboard({ ...props }) {
                             {[{ n: "Priya Sharma", c: "Financial Accounting", score: "91%", date: "10 Feb 2026" }, { n: "Nomvula Dlamini", c: "Leadership & Team Mgmt", score: "84%", date: "01 Mar 2026" }, { n: "Fatima Hendricks", c: "Project Management", score: "95%", date: "05 Feb 2026" }].map(function (cert, i) {
                                 return (
                                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: "1px solid #f8fafc" }}>
+
                                         <div style={{ fontSize: 28 }}>🏆</div>
                                         <div style={{ flex: 1 }}><div style={{ fontWeight: 600, fontSize: 13 }}>{cert.n}</div><div style={{ fontSize: 11, color: "#94a3b8" }}>{cert.c} • {cert.date}</div></div>
                                         <span style={{ fontWeight: 700, color: "#10B981" }}>{cert.score}</span>
@@ -1007,6 +1016,20 @@ function AdminDashboard({ ...props }) {
                     </div>
                 )}
             </div>
+            {
+                openEnrolmentForm &&
+                <EnrolmentForm
+                    p={p} s={s} notify={notify}
+                    currentUser={currentUser}
+                    onCancel={function () { setOpenEnrolmentForm(false); }}
+                    onSubmit={function (record) {
+                        // setMyEnrolments(function (prev) { return prev.concat([record]); });
+                        setOpenEnrolmentForm(false);
+                        notify("Enrolment submitted successfully!");
+                        // openCourse(enrollingCourse);
+                    }}
+                />
+            }
         </div>
     );
 }

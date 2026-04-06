@@ -1,13 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 // ----- API URL -----
-const API_URL = "/api/saTenants";
+const API_URL = "/api/tenants";
 
 // ----- Async Thunks -----
 
-// 1️⃣ GET all saTenants
-export const fetchsaTenants = createAsyncThunk(
-    "saTenants/fetchsaTenants",
+// 1️⃣ GET all tenants
+export const fetchtenants = createAsyncThunk(
+    "tenants/fetchtenants",
     async (_, { rejectWithValue }) => {
         try {
             const response = await fetch(API_URL);
@@ -22,9 +22,9 @@ export const fetchsaTenants = createAsyncThunk(
     }
 );
 
-// 2️⃣ CREATE a new saTenants
-export const createsaTenants = createAsyncThunk(
-    "saTenants/createsaTenants",
+// 2️⃣ CREATE a new tenants
+export const createtenants = createAsyncThunk(
+    "tenants/createtenants",
     async (saTenantData, { rejectWithValue }) => {
         try {
             const response = await fetch(API_URL, {
@@ -46,12 +46,12 @@ export const createsaTenants = createAsyncThunk(
     }
 );
 
-// 3️⃣ UPDATE a saTenants
-export const updatesaTenants = createAsyncThunk(
-    "saTenants/updatesaTenants",
+// 3️⃣ UPDATE a tenants
+export const updatetenants = createAsyncThunk(
+    "tenants/updatetenants",
     async ({ id, updatedData }, { rejectWithValue }) => {
         try {
-            const response = await fetch(`/api/saTenants/${id}`, {
+            const response = await fetch(`/api/tenants/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updatedData),
@@ -69,13 +69,12 @@ export const updatesaTenants = createAsyncThunk(
     }
 );
 
-// 4️⃣ DELETE a saTenants
-export const deletesaTenants = createAsyncThunk(
-    "saTenants/deletesaTenants",
+// 4️⃣ DELETE a tenants
+export const deletetenants = createAsyncThunk(
+    "tenants/deletetenants",
     async (id, { rejectWithValue }) => {
-        console.log(id);
         try {
-            const response = await fetch(`/api/saTenants/${id}`, {
+            const response = await fetch(`/api/tenants/${id}`, {
                 method: "DELETE",
             });
 
@@ -93,82 +92,82 @@ export const deletesaTenants = createAsyncThunk(
 
 // ----- Initial State -----
 const initialState = {
-    saTenants: [],
+    tenants: [],
     loading: false,
     error: null,
 };
 
 // ----- Slice -----
-const saTenantslice = createSlice({
-    name: "saTenants",
+const tenantslice = createSlice({
+    name: "tenants",
     initialState,
     reducers: {},
     extraReducers: (builder) => {
         builder
             // FETCH
-            .addCase(fetchsaTenants.pending, (state) => {
+            .addCase(fetchtenants.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchsaTenants.fulfilled, (state, action) => {
+            .addCase(fetchtenants.fulfilled, (state, action) => {
                 state.loading = false;
-                state.saTenants = action.payload;
+                state.tenants = action.payload;
             })
-            .addCase(fetchsaTenants.rejected, (state, action) => {
+            .addCase(fetchtenants.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload?.error || "Something went wrong";
             })
 
             // CREATE
-            .addCase(createsaTenants.pending, (state) => {
+            .addCase(createtenants.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(createsaTenants.fulfilled, (state, action) => {
+            .addCase(createtenants.fulfilled, (state, action) => {
                 state.loading = false;
-                state.saTenants.push(action.payload);
+                state.tenants.push(action.payload);
             })
-            .addCase(createsaTenants.rejected, (state, action) => {
+            .addCase(createtenants.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload?.error || "Something went wrong";
             })
 
             // UPDATE
-            .addCase(updatesaTenants.pending, (state) => {
+            .addCase(updatetenants.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(updatesaTenants.fulfilled, (state, action) => {
+            .addCase(updatetenants.fulfilled, (state, action) => {
                 state.loading = false;
-                // Match by _id if MongoDB, otherwise use id
-                const updatedsaTenants = action.payload;
-                const index = state.saTenants.findIndex(c => c._id === updatedsaTenants._id);
+                
+                const updatedtenants = action.payload;
+                const index = state.tenants.findIndex(c => c._id === updatedtenants._id);
                 if (index !== -1) {
-                    state.saTenants[index] = updatedsaTenants;
+                    state.tenants[index] = updatedtenants;
                 } else {
                     // Optional: push if not found
-                    state.saTenants.push(updatedsaTenants);
+                    state.tenants.push(updatedtenants);
                 }
             })
-            .addCase(updatesaTenants.rejected, (state, action) => {
+            .addCase(updatetenants.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload?.error || "Something went wrong";
             })
 
             // DELETE
-            .addCase(deletesaTenants.pending, (state) => {
+            .addCase(deletetenants.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(deletesaTenants.fulfilled, (state, action) => {
+            .addCase(deletetenants.fulfilled, (state, action) => {
                 state.loading = false;
-                state.saTenants = state.saTenants.filter(c => c._id !== action.payload);
+                state.tenants = state.tenants.filter(c => c._id !== action.payload);
             })
-            .addCase(deletesaTenants.rejected, (state, action) => {
+            .addCase(deletetenants.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload?.error || "Something went wrong";
             });
     },
 });
 
-export default saTenantslice.reducer;
+export default tenantslice.reducer;

@@ -1,6 +1,6 @@
 import Toast from "./toast";
 
-function AdminSidebar({...props}) {
+function AdminSidebar({ ...props }) {
   // var tab = props.tab, setTab = props.setTab, items = props.items, tenant = props.tenant,
   //   currentUser = props.currentUser, userRole = props.userRole,
   //   currentTenant = props.currentTenant, logout = props.logout,
@@ -12,12 +12,20 @@ function AdminSidebar({...props}) {
       <Toast notification={notification} />
       <div style={{ padding: "20px 18px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 34, height: 34, background: p, borderRadius: 9, display: "flex", alignItems: "center",
-            justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff"
-          }}>
-            {tenant && tenant.logo}
-          </div>
+          {
+            currentTenant === "skillivio" ?
+              <img src='/logo/skillivioLogo.jpeg' alt='skillivio' style={{
+                width: 34, height: 34, background: p, borderRadius: 9, display: "flex", alignItems: "center",
+                justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff"
+              }} />
+              :
+              <div style={{
+                width: 34, height: 34, background: p, borderRadius: 9, display: "flex", alignItems: "center",
+                justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff"
+              }}>
+                {tenant && tenant.logo}
+              </div>
+          }
           <div>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{tenant && tenant.name}</div>
             <div style={{ color: p, fontSize: 10 }}>{tenant && tenant.plan}</div>
