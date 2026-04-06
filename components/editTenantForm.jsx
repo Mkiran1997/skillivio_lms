@@ -2,7 +2,6 @@ import { useState } from "react";
 import { TIER_DATA } from "../app/mockData";
 import { GLOBAL_CSS } from "../app/globalCss";
 import { useDispatch } from "react-redux";
-import { deletesaTenants } from "@/store/slices/saTenantSlice";
 
 function EditTenantForm({ tenant, onSave, onCancel }) {
     const p = "#2FBF71";
@@ -127,10 +126,74 @@ function EditTenantForm({ tenant, onSave, onCancel }) {
                                         {["AgriSETA", "BankSETA", "CATHSSETA", "CHIETA", "CETA", "ETDP SETA", "FoodBev SETA", "HWSETA", "INSETA", "LGSETA", "MICTS SETA", "MQA", "MERSETA", "PSETA", "SASSETA", "Services SETA", "TETA", "W&RSETA"].map(function (s) { return <option key={s}>{s}</option>; })}
                                     </select>
                                 </div>
-                                <div>
+                                <div style={{ marginBottom: 16, maxWidth: 200 }}>
+                                    <label style={{
+                                        display: "block",
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        color: "#475569",
+                                        marginBottom: 6
+                                    }}>
+                                        Logo
+                                    </label>
+
+                                    <div style={{display:"flex",gap:10}}>
+                                        {/* File input styled like a button */}
+                                        <label style={{
+                                            display: "inline-block",
+                                            padding: "8px 16px",
+                                            backgroundColor: "#10B981",
+                                            color: "#fff",
+                                            borderRadius: 8,
+                                            cursor: "pointer",
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            marginBottom: 8,
+                                            textAlign: "center"
+                                        }}>
+                                            Choose Image
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (!file) return;
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setForm(f => ({ ...f, logo: reader.result }));
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }}
+                                                style={{ display: "none" }}
+                                            />
+                                        </label>
+
+                                        {/* Preview box */}
+                                        {form.logo && (
+                                            <div style={{
+                                                width: 38,
+                                                height: 38,
+                                                borderRadius: 12,
+                                                border: "2px dashed #cbd5e1",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                overflow: "hidden",
+                                                backgroundColor: "#f9fafb"
+                                            }}>
+                                                <img
+                                                    src={form.logo}
+                                                    alt="Logo Preview"
+                                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* <div>
                                     <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4, display: "block" }}>Logo</label>
                                     <input value={form.logo} onChange={(e) => setForm(f => ({ ...f, logo: e.target.value }))} placeholder="" style={iSt("logo")} />
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     )}

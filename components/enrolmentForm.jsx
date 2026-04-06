@@ -1,17 +1,52 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ENROLMENT_STORE } from "../app/mockData";
 import { GLOBAL_CSS } from "../app/globalCss";
 import { useDispatch, useSelector } from "react-redux";
 import { createEnrollment } from "@/store/slices/enrollmentSlice";
+import { fetchCourses } from "@/store/slices/courseSlice";
+import { fetchUsers } from "@/store/slices/authSlice";
 
 
+
+function F(fp) {
+    var label = fp.label, val = fp.val, onChange = fp.onChange, type = fp.type || "text", options = fp.options, required = fp.required;
+    return (
+        <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>
+                {label}{required && <span style={{ color: "#EF4444" }}> *</span>}
+            </label>
+            {type === "select" ?
+                <select value={val} onChange={function (e) { onChange(e.target.value); }}
+                    style={{ border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none" }}>
+                    {options.map(function (o) { return <option key={o}>{o}</option>; })}
+                </select>
+                : type === "textarea" ?
+                    <textarea value={val} onChange={function (e) { onChange(e.target.value); }} rows={2}
+                        style={{ border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    :
+                    <input type={type} value={val} onChange={function (e) { onChange(e.target.value); }}
+                        style={{ border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none", boxSizing: "border-box" }} />
+            }
+        </div>
+    );
+}
 
 function EnrolmentForm({ ...props }) {
-    const { course, learnerUser, onSubmit, onCancel, p, s, notify } = props;
+    const { course, learnerUser, onSubmit, onCancel, p, s, notify,currentUser } = props;
+    const { Course, loading, error } = useSelector(state => state.course);
+       const { User } = useSelector(state => state.user);
+
+
     var today = new Date().toISOString().split("T")[0];
+    const [selectedCourse, setSelectedCourse] = useState("")
+
+    const selectedCourseDetail = useMemo(() => {
+        return Course.find((course) => course._id === selectedCourse);
+    }, [selectedCourse, Course])
+    //   
 
     var [step, setStep] = useState("A");
-    var [secA, setSecA] = useState({ saqaId: "", nqfLevel: (course.nqf), credits: (course.credits), intakeNo: "", startDate: today, endDate: "", mode: "Blended" });
+    var [secA, setSecA] = useState({ saqaId: "", nqfLevel: "", credits: 0, intakeNo: "", startDate: today, endDate: "", mode: "Blended" });
     var [secB, setSecB] = useState({ fullName: "", idNumber: "", dob: "", gender: "", nationality: "South African", address: "", contact: "", email: learnerUser ? learnerUser.email : "" });
     var [secC, setSecC] = useState({ employer: "", workAddress: "", contactPerson: "", contactNo: "", mentor: "No" });
     var [secD, setSecD] = useState([
@@ -27,6 +62,7 @@ function EnrolmentForm({ ...props }) {
     var [secH, setSecH] = useState({ verified: "No", approved: "No", qctoDate: "", repName: "", sig: "", date: today });
     var [docs, setDocs] = useState({ certifiedId: null, highestQual: null, cv: null, studyPermit: null, workplaceConf: null, entryAssessment: null });
     var [submitting, setSubmitting] = useState(false);
+    const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
     var DOC_LABELS = { certifiedId: "Certified ID", highestQual: "Highest Qualification", cv: "CV", studyPermit: "Study Permit", workplaceConf: "Workplace Confirmation", entryAssessment: "Entry Assessment Record" };
 
@@ -41,19 +77,57 @@ function EnrolmentForm({ ...props }) {
         notify(DOC_LABELS[key] + " uploaded!");
     }
     const { Enrollment } = useSelector(state => state.enrollment);
+
+
     const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(fetchCourses());
+        dispatch(fetchUsers());
+    }, [dispatch])
+
+    useEffect(() => {
+        if (Course.length > 0 && !selectedCourse) {
+            setSelectedCourse(Course[0]._id);
+        }
+    }, [Course, selectedCourse]);
+
+
+
+    useEffect(() => {
+        if (selectedCourseDetail) {
+            setSecA((prev) => ({
+                ...prev,
+                nqfLevel: String(selectedCourseDetail.nqf),
+                credits: selectedCourseDetail.credits
+            }));
+        } else if (course?.nqf) {
+            setSecA((prev) => ({
+                ...prev,
+                nqfLevel: course.nqf,
+                credits: course.credits
+            }));
+        }
+    }, [selectedCourseDetail, course]);
+
 
     function handleSubmit() {
+
         if (!secB.fullName) { notify("Full name required in Section B", "error"); setStep("B"); return; }
         if (!secB.idNumber) { notify("ID number required in Section B", "error"); setStep("B"); return; }
         if (!secF.agreed) { notify("Please accept the declaration in Section F", "error"); setStep("F"); return; }
         if (!secG.consent) { notify("POPIA consent required in Section G", "error"); setStep("G"); return; }
         setSubmitting(true);
         var record = { course: course, secA: secA, secB: secB, secC: secC, secD: secD, secE: secE, secF: secF, secG: secG, secH: secH, docs: docs, submittedAt: new Date().toISOString() };
-        var key = (learnerUser ? learnerUser.id : "u") + "_" + course.id;
+        if ((course?.setaAffiliation === "QCTO (Direct)" || selectedCourseDetail?.setaAffiliation === "QCTO (Direct)") && !disclaimerAccepted) {
+            notify("Please accept the QCTO Disclaimer before enrolling.", "error");
+            return;
+        }
+        const usersId = User.find((user) => user.name === secB.fullName).id;
+        console.log(usersId);
+        var key = (learnerUser ? learnerUser.id : "u") + "_" + course === undefined ? selectedCourseDetail?._id : course?.id;
         const enrollmentRecord = {
-            courseId: course._id,          // ObjectId of course
-            userId: "69cf9f8735f8f030ce7fcb7e", // ObjectId of user (or null if guest)
+            courseId: course === undefined ? selectedCourseDetail._id : course._id,          // ObjectId of course
+            userId: learnerUser?._id || usersId, // ObjectId of user (or null if guest)
             saqaId: secA.saqaId,
             intakeNo: secA.intakeNo,
             startDate: secA.startDate ? new Date(secA.startDate) : new Date(),
@@ -79,28 +153,6 @@ function EnrolmentForm({ ...props }) {
         setTimeout(function () { setSubmitting(false); onSubmit(record); }, 700);
     }
 
-    function F(fp) {
-        var label = fp.label, val = fp.val, onChange = fp.onChange, type = fp.type || "text", options = fp.options, required = fp.required;
-        return (
-            <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>
-                    {label}{required && <span style={{ color: "#EF4444" }}> *</span>}
-                </label>
-                {type === "select" ?
-                    <select value={val} onChange={function (e) { onChange(e.target.value); }}
-                        style={{ border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none" }}>
-                        {options.map(function (o) { return <option key={o}>{o}</option>; })}
-                    </select>
-                    : type === "textarea" ?
-                        <textarea value={val} onChange={function (e) { onChange(e.target.value); }} rows={2}
-                            style={{ border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
-                        :
-                        <input type={type} value={val} onChange={function (e) { onChange(e.target.value); }}
-                            style={{ border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none", boxSizing: "border-box" }} />
-                }
-            </div>
-        );
-    }
 
     function SH(sp) {
         var letter = sp.letter, title = sp.title;
@@ -123,7 +175,7 @@ function EnrolmentForm({ ...props }) {
                 <div style={{ background: s, padding: "20px 24px", borderRadius: "16px 16px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                         <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>Learner Enrolment Form</div>
-                        <div style={{ color: p, fontSize: 13, marginTop: 2 }}>{course.title} — NQF Level {course.nqf} • {course.credits} Credits</div>
+                        <div style={{ color: p, fontSize: 13, marginTop: 2 }}>{selectedCourseDetail === undefined ? course?.title : selectedCourseDetail?.title} — NQF Level {selectedCourseDetail === undefined ? course?.nqf : selectedCourseDetail?.nqf} •  {selectedCourseDetail === undefined ? course?.credits : selectedCourseDetail?.credits} Credits</div>
                     </div>
                     <button onClick={onCancel} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 14px", fontSize: 13, cursor: "pointer" }}>✕ Close</button>
                 </div>
@@ -146,8 +198,85 @@ function EnrolmentForm({ ...props }) {
                         <SH letter="A" title="Qualification Details" />
                         <div style={cardSt}>
                             <div style={{ marginBottom: 14, padding: "10px 14px", background: p + "10", borderRadius: 8, border: "1px solid " + p + "30" }}>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: p }}>{course.title}</div>
+                                {course === undefined ? (
+                                    <select
+                                        value={selectedCourse}
+                                        onChange={(e) => setSelectedCourse(e.target.value)}
+                                        disabled={!Course.length}
+                                        style={{
+                                            width: "100%",
+                                            padding: "8px 12px",
+                                            fontSize: 13,
+                                            borderRadius: 6,
+                                            border: `1px solid ${p}50`,
+                                            outline: "none",
+                                            background: "#fff",
+                                            cursor: Course.length ? "pointer" : "not-allowed",
+                                        }}
+                                    >
+                                        {Course.filter((course)=> course.type===currentUser.tenantId.slug).map((courseItem) => (
+                                            <option key={courseItem._id} value={courseItem._id}>
+                                                {courseItem.title}
+                                            </option>
+                                        ))}
+                                    </select>) :
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: p }}>{course?.title}</div>
+                                }
+
                             </div>
+
+                            {(Course?.setaAffiliation === "QCTO (Direct)" || selectedCourseDetail?.setaAffiliation === "QCTO (Direct)") && (
+                                <div style={{
+                                    border: "1px solid #fbbf24",       // golden border to match warning
+                                    borderRadius: "12px",
+                                    padding: "20px",
+                                    marginTop: "24px",
+                                    backgroundColor: "#fff7ed",        // light warning background
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                                    transition: "all 0.3s ease"
+                                }}>
+                                    <h3 style={{
+                                        marginBottom: "12px",
+                                        fontSize: "18px",
+                                        fontWeight: 600,
+                                        color: "#b45309"                // amber/dark warning color
+                                    }}>
+                                        ⚠ QCTO Disclaimer
+                                    </h3>
+                                    <p style={{
+                                        marginBottom: "16px",
+                                        fontSize: "14px",
+                                        color: "#374151",
+                                        lineHeight: 1.6
+                                    }}>
+                                        This course is affiliated with the Quality Council for Trades and Occupations (QCTO).
+                                        By enrolling, you acknowledge that you have read and understood the QCTO requirements and disclaimers for this course.
+                                    </p>
+                                    <label style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "10px",
+                                        fontSize: "14px",
+                                        color: "#1f2937",
+                                        cursor: "pointer"
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={disclaimerAccepted}
+                                            onChange={(e) => setDisclaimerAccepted(e.target.checked)}
+                                            style={{
+                                                width: "18px",
+                                                height: "18px",
+                                                accentColor: "#f59e0b",   // checkbox color matching warning
+                                                cursor: "pointer"
+                                            }}
+                                        />
+                                        I have read and accept the QCTO Disclaimer.
+                                    </label>
+                                </div>
+                            )}
+                            <br />
+
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                                 <F label="SAQA ID" val={secA.saqaId} onChange={function (v) { setSecA(function (s) { return { ...s, saqaId: v }; }); }} required />
                                 <F label="NQF Level" val={secA.nqfLevel} onChange={function (v) { setSecA(function (s) { return { ...s, nqfLevel: v }; }); }} type="select" options={["2", "3", "4", "5", "6", "7", "8"]} />
@@ -446,14 +575,30 @@ function EnrolmentForm({ ...props }) {
                             {stepIdx < SECTIONS.length - 1 && <button onClick={function () { setStep(SECTIONS[stepIdx + 1]); }}
                                 style={{ background: p, color: "#fff", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Next →</button>}
                         </div>
-                        <button onClick={handleSubmit} disabled={submitting}
-                            style={{ background: submitting ? "#94a3b8" : "#10B981", color: "#fff", border: "none", borderRadius: 8, padding: "11px 28px", fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer" }}>
-                            {submitting ? "Submitting…" : "✓ Submit Enrolment Form"}
+                        <button
+                            onClick={handleSubmit}
+                            disabled={(course?.setaAffiliation === "QCTO (Direct)" || selectedCourseDetail?.setaAffiliation === "QCTO (Direct)") && !disclaimerAccepted || submitting} // also disable while submitting
+                            style={{
+                                padding: "10px 20px",
+                                backgroundColor: ((course?.setaAffiliation === "QCTO (Direct)" || selectedCourseDetail?.setaAffiliation === "QCTO (Direct)") && !disclaimerAccepted || submitting) ? "#ccc" : "#10B981",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "6px",
+                                cursor: ((course?.setaAffiliation === "QCTO (Direct)" || selectedCourseDetail?.setaAffiliation === "QCTO (Direct)") && !disclaimerAccepted || submitting) ? "not-allowed" : "pointer"
+                            }}
+                        >
+                            {submitting ? "Submitting..." : "Submit"}
                         </button>
+
                     </div>
+                    {course?.setaAffiliation === "QCTO (Direct)" && !disclaimerAccepted && (
+                        <p style={{ color: "#B45309", fontSize: "13px", marginTop: "8px" }}>
+                            Please accept the QCTO Disclaimer to enable submission.
+                        </p>
+                    )}
                 </div>
             </div>
-            
+
         </div>
     );
 }

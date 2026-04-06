@@ -29,7 +29,7 @@ function App() {
   // Course builder state — lives here to avoid remount loss
   var [courseBuilderOpen, setCourseBuilderOpen] = useState(false);
   var [editingCourse, setEditingCourse] = useState(null);   // null = create mode, course obj = edit mode
-  var [newCourse, setNewCourse] = useState({ title: "", cat: "Technology", level: "BEGINNER", nqf: 4, credits: 10, price: "", free: true, desc: "", thumb: "📘", saqaId: "", passingScore: 75, dripEnabled: false });
+  var [newCourse, setNewCourse] = useState({ title: "", cat: "Technology", level: "BEGINNER", nqf: 4, credits: 10, price: "", free: true, desc: "", thumb: "📘", saqaId: "", passingScore: 75, dripEnabled: false,setaAffiliation:"" });
   var [courseModules, setCourseModules] = useState([]);
   var [activeModuleIdx, setActiveModuleIdx] = useState(null);
   var [uploadingForCourse, setUploadingForCourse] = useState(null);
@@ -38,10 +38,10 @@ function App() {
 
   var tenant = TENANTS[currentTenant];
   useTheme(tenant);
-  var p = tenant.primary, s = tenant.secondary, a = tenant.accent;
+  var p = tenant?.primary, s = tenant.secondary, a = tenant.accent;
 
   function notify(msg, type) {
-    setNotification({ msg: msg, type: type || "success"});
+    setNotification({ msg: msg, type: type || "success" });
     setTimeout(function () { setNotification(null); }, 3500);
   }
 
@@ -49,7 +49,7 @@ function App() {
     setCurrentUser(user);
     setUserRole(user.role);
     // if (TENANTS[user.tenant]) setCurrentTenant(user.tenant);
-    setView(user.role === "TENANT_ADMIN" ? "admin" : user.role === "SUPER_ADMIN" ? "superadmin" : "learner");
+    setView(user.role === "admin" ? "admin" : user.role === "superAdmin" ? "superadmin" : "learner");
     notify("Welcome back, " + user.name.split(" ")[0] + "!");
   }
 
@@ -120,7 +120,6 @@ function App() {
     var title = newCourse.title ? newCourse.title.trim() : "";
     if (!title) { notify("Course title is required.", "error"); return; }
     var totalLessons = courseModules.reduce(function (s, m) { return s + (m.lessons ? m.lessons.length : 0); }, 0);
-    console.log(typeof totalLessons);
     var courseData = {
       title: title,
       cat: newCourse.cat,
@@ -137,6 +136,7 @@ function App() {
       dripEnabled: newCourse.dripEnabled || false,
       modules: courseModules,
       lessons: totalLessons,
+      setaAffiliation:newCourse.setaAffiliation
     };
     if (editingCourse) {
       // Update existing
@@ -176,10 +176,13 @@ function App() {
       dripEnabled: newCourse.dripEnabled || false,
       modules: courseModules,
       lessons: totalLessons,
+      type: currentUser.tenantId.slug === "acme" ? "acme" : currentUser.tenantId.slug === "techpro" ? "techpro" : "skillivio",
+      setaAffiliation:newCourse.setaAffiliation
     };
     dispatch(createCourses(courseData))
     setCourseBuilderOpen(false);
     setEditingCourse(null);
+    
   }
 
   // CSS helpers
@@ -208,7 +211,7 @@ function App() {
 
   if (view === "landing") return <LandingPage {...sharedPortalProps} setCurrentTenant={setCurrentTenant} />;
 
-  if (view === "login") return <LoginPage onLogin={loginUser} onBack={function () { setView("landing"); }} tenant={tenant} p={p} s={s} />;
+  if (view === "login") return <LoginPage onLogin={loginUser} onBack={function () { setView("landing"); }} tenant={tenant} p={p} s={s} currentTenant={currentTenant}/>;
 
   if (view === "superadmin") return (
     <SkillivioSuperAdmin {...sharedPortalProps}
@@ -238,6 +241,7 @@ function App() {
       setEditingCourse={setEditingCourse}
       saveCourse={saveCourse}
       openCourseEditor={openCourseEditor}
+      BLANK_COURSE={BLANK_COURSE}
       courseModules={courseModules} setCourseModules={setCourseModules}
       activeModuleIdx={activeModuleIdx} setActiveModuleIdx={setActiveModuleIdx}
       editingCourse={editingCourse}

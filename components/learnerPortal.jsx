@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { usePagination } from "../app/utility";
 import { GLOBAL_CSS } from "../app/globalCss";
 import AdminSidebar from "./adminSidebar";
@@ -10,48 +10,42 @@ import { fetchCourses } from "@/store/slices/courseSlice";
 import { fetchEnrollment } from "@/store/slices/enrollmentSlice";
 
 function LearnerPortal({ ...props }) {
-    // var p = props.p, s = props.s, a = props.a, css = props.css,
-    //     notify = props.notify, notification = props.notification,
-    //     tenant = props.tenant, currentTenant = props.currentTenant,
-    //     userRole = props.userRole, currentUser = props.currentUser,
-    //     logout = props.logout, setView = props.setView,
-    //     courses = props.courses, openCourse = props.openCourse, uploadingForCourse = props.uploadingForCourse;
-
-
+    const { setUploadingForCourse, setCourseFiles, courseFiles, p, s, a, css, notify, notification, tenant, currentTenant, userRole, currentUser, logout, setView, courses, openCourse, uploadingForCourse } = props;
     const { Course, loading, error } = useSelector(state => state.course);
     const { Enrollment } = useSelector(state => state.enrollment);
 
     const dispatch = useDispatch();
 
     useEffect(() => {
-        dispatch(fetchCourses())
+        dispatch(fetchCourses());
+        dispatch(fetchEnrollment());
+
     }, [dispatch]);
 
+    const userEnrollment = useMemo(() => {
+        return Enrollment.filter((enroll) => enroll.userId._id === currentUser._id)
+    }, [Enrollment, currentUser])
 
-    const { setUploadingForCourse, setCourseFiles, courseFiles, p, s, a, css, notify, notification, tenant, currentTenant, userRole, currentUser, logout, setView, courses, openCourse, uploadingForCourse } = props;
     var [tab, setTab] = useState("home");
     const [uploadedFilesByCourse, setUploadedFilesByCourse] = useState({});
     var [enrollingCourse, setEnrolling] = useState(null);
     var [myEnrolments, setMyEnrolments] = useState([]);
-    var myCourses = courses.filter(function (c) { return c.progress > 0 || c.id === "c3"; });
-    var browseable = Course.filter(function (c) { return c.status === "PUBLISHED"; });
+    var myCourses = Enrollment.filter((enrol)=> enrol.userId._id===currentUser._id);
+    var browseable = Course.filter(function (c) { return c.status === "PUBLISHED" && currentUser.tenantId.slug === c.type });
     var browsePag = usePagination(browseable, 6);
     const userCourses = Enrollment.map((course) => course.courseId);
-    console.log(userCourses)
-    var myCourPag = usePagination(userCourses,4);
+    var myCourPag = usePagination(userCourses, 4);
 
     var SB_ITEMS = [
         { id: "home", icon: "🏠", label: "My Dashboard" },
-        { id: "courses", icon: "📚", label: "My Courses", badge: userCourses.length },
+        { id: "courses", icon: "📚", label: "My Courses", badge: myCourses.length },
         { id: "browse", icon: "🔍", label: "Browse Courses" },
-        { id: "enrolments", icon: "📋", label: "My Enrolments", badge: Enrollment.length || undefined },
-        { id: "certificates", icon: "🏆", label: "Certificates", badge: "1" },
+        { id: "enrolments", icon: "📋", label: "My Enrolments", badge: userEnrollment.length || undefined },
+        { id: "certificates", icon: "🏆", label: "Certificates", badge: myCourses.length===0 ?"0":"1" },
         { id: "community", icon: "💬", label: "Community" },
-    ];
+    ]
 
-    useEffect(() => {
-        dispatch(fetchEnrollment());
-    }, [dispatch])
+
 
 
     const handleFileUpload = (event, courseId) => {
@@ -71,7 +65,6 @@ function LearnerPortal({ ...props }) {
             [courseId]: validFiles, // store files under this course ID
         }));
 
-        console.log(`Uploaded files for course ${courseId}:`, validFiles);
     };
 
     const openFile = (file) => {
@@ -187,21 +180,21 @@ function LearnerPortal({ ...props }) {
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
                             <StatCard icon="📚" value={myCourses.length} label="Enrolled" color={p} />
                             <StatCard icon="🏆" value={myCourses.filter(function (c) { return c.progress === 100; }).length} label="Completed" color="#10B981" />
-                            <StatCard icon="📈" value={Math.round(myCourses.reduce(function (s, c) { return s + c.progress; }, 0) / Math.max(myCourses.length, 1)) + "%"} label="Avg Progress" color={a} />
+                            <StatCard icon="📈" value={Math.round(myCourses.reduce(function (s, c) { return s + c.courseId.progress; }, 0) / Math.max(myCourses.length, 1)) + "%"} label="Avg Progress" color={a} />
                             <StatCard icon="⭐" value="18" label="Credits Earned" color="#8B5CF6" />
                         </div>
                         <div style={{ ...css.card, marginBottom: 16 }}>
                             <h3 style={{ ...css.h3, marginBottom: 16 }}>Continue Learning</h3>
-                            {myCourses.filter(function (c) { return c.progress > 0 && c.progress < 100; }).map(function (c) {
+                            {myCourses.map(function (c) {
                                 return (
                                     <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 0", borderBottom: "1px solid #f8fafc" }}>
-                                        <div style={{ width: 44, height: 44, background: p + "18", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{c.thumb}</div>
+                                        <div style={{ width: 44, height: 44, background: p + "18", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{c.courseId.thumb}</div>
                                         <div style={{ flex: 1 }}>
-                                            <div style={{ fontWeight: 700, fontSize: 14 }}>{c.title}</div>
+                                            <div style={{ fontWeight: 700, fontSize: 14 }}>{c.courseId.title}</div>
                                             <div style={{ height: 6, background: "#f1f5f9", borderRadius: 3, margin: "6px 0", overflow: "hidden" }}>
-                                                <div style={{ height: "100%", width: c.progress + "%", background: p, borderRadius: 3 }} />
-                                            </div>
-                                            <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.progress}% complete</div>
+                                                <div style={{ height: "100%", width: c.courseId.progress + "%", background: p, borderRadius: 3 }} />
+                                            </div>  
+                                            <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.courseId.progress}% complete</div>
                                         </div>
                                         <button onClick={function () { openCourse(c); }} style={css.btn(p, "#fff", true)}>Continue</button>
                                     </div>
@@ -219,6 +212,7 @@ function LearnerPortal({ ...props }) {
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 18 }}>
                             {browsePag.slice.map(function (course) {
+                                const isEnrolling = Enrollment.some((enrol) => enrol.courseId._id === course.id && enrol.userId._id=== currentUser._id);
                                 return (
                                     <div key={course.id} style={{ ...css.card, padding: 0, overflow: "hidden", cursor: "pointer", transition: "all 0.2s" }}
                                         onMouseEnter={function (e) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 28px rgba(0,0,0,0.12)"; }}
@@ -241,8 +235,10 @@ function LearnerPortal({ ...props }) {
                                                         <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>PayShap · EFT</div>
                                                     )}
                                                 </div>
-                                                <button onClick={function () { setEnrolling(course); }}
-                                                    style={css.btn(p, "#fff", true)}>Enroll</button>
+                                                <button
+                                                    onClick={function () { setEnrolling(course); }}
+                                                    disabled={isEnrolling}
+                                                    style={{ ...css.btn(p, "#fff", true), backgroundColor: isEnrolling ? "#ccc" : "#10B981" }}>Enroll</button>
                                             </div>
                                         </div>
                                     </div>
@@ -257,33 +253,33 @@ function LearnerPortal({ ...props }) {
                     <div className="fade">
                         <h1 style={{ ...css.h1, marginBottom: 24 }}>My Courses</h1>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
-                            {myCourPag.slice?.map(function (c) {
+                            {myCourses?.map(function (c) {
                                 return (
-                                    <div key={c.id} style={{ ...css.card, display: "flex", gap: 14 }}>
-                                        <div style={{ width: 52, height: 52, background: p + "18", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{c.thumb}</div>
+                                    <div key={c._id} style={{ ...css.card, display: "flex", gap: 14 }}>
+                                        <div style={{ width: 52, height: 52, background: p + "18", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{c?.courseId.thumb}</div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{c.title}</div>
+                                            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{c?.courseId.title}</div>
                                             <div style={{ height: 5, background: "#f1f5f9", borderRadius: 2, overflow: "hidden", marginBottom: 4 }}>
-                                                <div style={{ height: "100%", width: c.progress + "%", background: c.progress === 100 ? "#10B981" : p }} />
+                                                <div style={{ height: "100%", width: c?.courseId.progress + "%", background: c?.courseId.progress === 100 ? "#10B981" : p }} />
                                             </div>
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                <span style={{ fontSize: 11, color: "#94a3b8" }}>{c.progress}%</span>
+                                                <span style={{ fontSize: 11, color: "#94a3b8" }}>{c?.courseId.progress}%</span>
                                                 <div style={{ display: "flex", gap: 5 }}>
                                                     <div style={{ display: "flex", gap: 5 }}>
                                                         <input
                                                             type="file"
                                                             accept=".txt,.pdf"
                                                             style={{ display: "none" }}
-                                                            id={`fileUpload-${c.id}`} // unique ID per course
-                                                            onChange={(e) => handleFileUpload(e, c.id)} // pass course ID
+                                                            id={`fileUpload-${c?.id}`} // unique ID per course
+                                                            onChange={(e) => handleFileUpload(e, c?.id)} // pass course ID
                                                         />
                                                         <div style={{ backgroundColor: "#007BFF", color: "#fff", padding: "10px", border: "none", borderRadius: "4px" }}>
                                                             Practical
                                                         </div>
-                                                        {uploadedFilesByCourse[c.id]?.length > 0 && (
+                                                        {uploadedFilesByCourse[c?.id]?.length > 0 && (
                                                             <div>
                                                                 <ul>
-                                                                    {uploadedFilesByCourse[c.id].map((file, index) => (
+                                                                    {uploadedFilesByCourse[c?.id].map((file, index) => (
                                                                         <li key={index} style={{ marginTop: 5 }}>
 
                                                                             <button
@@ -307,7 +303,7 @@ function LearnerPortal({ ...props }) {
 
                                                     </div>
 
-                                                    {c.progress === 100
+                                                    {c?.progress === 100
                                                         ? <span style={{ ...css.tag("#10B981"), fontSize: 10, paddingTop: 10 }}>Completed</span>
                                                         : <button onClick={function () { openCourse(c); }} style={css.btn(p, "#fff", true)}>Continue</button>}
                                                 </div>
@@ -325,14 +321,14 @@ function LearnerPortal({ ...props }) {
                 {tab === "enrolments" && (
                     <div className="fade">
                         <h1 style={{ ...css.h1, marginBottom: 24 }}>My Enrolments</h1>
-                        {Enrollment.length === 0
+                        {userEnrollment.length === 0
                             ? <div style={{ ...css.card, textAlign: "center", padding: "48px" }}>
                                 <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
                                 <h3 style={css.h3}>No Enrolments Yet</h3>
                                 <p style={{ color: "#94a3b8", marginTop: 8, marginBottom: 20 }}>Browse courses and click Enroll to complete the QCTO enrolment form.</p>
                                 <button onClick={function () { setTab("browse"); }} style={css.btn(p)}>Browse Courses →</button>
                             </div>
-                            : Enrollment.map(function (rec, i) {
+                            : userEnrollment.map(function (rec, i) {
                                 var docKeys = ["certifiedId", "highestQual", "cv", "studyPermit", "workplaceConf", "entryAssessment"];
                                 var uploaded = docKeys.filter(function (k) { return rec.docs && rec.docs[k]; }).length;
                                 return (

@@ -6,8 +6,9 @@ import StatCard from "./statCard";
 import TierDemoView from "./tierDemoView";
 import NewTenantForm from "./newTenantForm";
 import { useDispatch, useSelector } from "react-redux";
-import { createsaTenants, fetchsaTenants, updatesaTenants } from "@/store/slices/saTenantSlice";
+import { createtenants, fetchtenants, updatetenants, } from "@/store/slices/tenantSlice";
 import EditTenantForm from "./editTenantForm";
+import { fetchEnrollment } from "@/store/slices/enrollmentSlice";
 
 
 function SkillivioSuperAdmin({ ...props }) {
@@ -22,12 +23,13 @@ function SkillivioSuperAdmin({ ...props }) {
     var SKP = "#2FBF71";
     var SKS = "#2E3044";
 
-    const { saTenants } = useSelector(state => state.saTenants);
+    const { tenants } = useSelector(state => state.tenants);
+    const { Enrollment } = useSelector(state => state.enrollment);
     const dispatch = useDispatch();
 
 
     var [tab, setTab] = useState("tenants");
-    var [tenants, setTenants] = useState(saTenants);
+    var [Tenants, setTenants] = useState(tenants);
     var [sendingInvoice, setSendingInvoice] = useState(null);
     var [showForm, setShowForm] = useState(false);
     var [demoTier, setDemoTier] = useState(null);
@@ -36,31 +38,53 @@ function SkillivioSuperAdmin({ ...props }) {
 
 
     // var tenantList = Object.values(tenants);
-    var totalMRR = saTenants.filter(function (t) { return t.status === "Active"; }).reduce(function (s, t) { return s + t.mrr; }, 0);
-    var totalLrn = saTenants.reduce(function (s, t) { return s + t.learners; }, 0);
-    var active = saTenants.filter(function (t) { return t.status === "Active"; }).length;
-    var pending = saTenants.filter(function (t) { return t.status === "Pending"; }).length;
+    var totalMRR = tenants?.filter(function (t) { return t.status === "Active"; }).reduce(function (s, t) { return s + t.mrr; }, 0);
+    var totalLrn = Enrollment?.filter((enrol)=> enrol._id).length;
+    var active = tenants?.filter(function (t) { return t.status === "Active"; }).length;
+    var pending = tenants?.filter(function (t) { return t.status === "Pending"; }).length;
 
     var tierColor = { foundation: "#10B981", professional: "#7C3AED", enterprise: "#0EA5E9" };
 
-
     useEffect(() => {
-        dispatch(fetchsaTenants())
+        dispatch(fetchtenants())
+        dispatch(fetchEnrollment());
     }, [dispatch])
 
     function handleNewTenant(form) {
         const id = "t" + Date.now();
 
         const newTenant = {
-            id,
-            slug: form.slug,
+            // Basic info
+            id,                               // unique ID
             name: form.name,
+            slug: form.slug,
+            primary: form.primary || "#000000",     // fallback if not provided
+            secondary: form.secondary || "#ffffff",
+            accent: form.accent || "#10B981",
+            logo: form.logo || "",
+            tagline: form.tagline || "",
+
+            // General settings
+            general: {
+                supportEmail: form.supportEmail || "support@example.com",
+                timeZone: form.timeZone || "UTC",
+                currency: form.currency || "ZAR"
+            },
+
+            // QCTO configuration
+            QCTOConfig: {
+                accreditationNumber: form.accreditationNumber || "",
+                setaAffiliation: form.setaAffiliation || "OTHER",
+                qctoAudit: form.qctoAudit ?? true,
+                autoGenerateQCTO: form.autoGenerateQCTO ?? true
+            },
+
+            // Tenant business info
             tier: form.tier,
-            status: "Pending",
-            domain: form.domain || `${form.slug}.skillivio.com`,
             contact: form.contact,
+            domain: form.domain || `${form.slug}.skillivio.com`,
             email: form.email,
-            learners: 0,
+            learners: 0,   // start with zero learners
             mrr: TIER_DATA[form.tier]
                 ? Number(TIER_DATA[form.tier].monthly.replace(/[^0-9]/g, ""))
                 : 1490,
@@ -68,12 +92,12 @@ function SkillivioSuperAdmin({ ...props }) {
             phone: form.phone || "",
             qctoNo: form.qctoNo || "",
             seta: form.seta || "",
-            logo: form.logo || "",
+            status: "Pending",
             setupDate: new Date().toISOString().split("T")[0]
         };
 
         // Dispatch the action with the tenant payload
-        dispatch(createsaTenants(newTenant));
+        dispatch(createtenants(newTenant));
 
         setShowForm(false);
         notify(`Tenant "${form.name}" created! Onboarding email sent.`);
@@ -85,7 +109,7 @@ function SkillivioSuperAdmin({ ...props }) {
     }
 
     var SB_ITEMS = [
-        { id: "tenants", icon: "🏢", label: "Tenants", badge: tenants.length },
+        { id: "tenants", icon: "🏢", label: "Tenants", badge: tenants.filter(tenant=> tenant.slug!=="skillivio")?.length },
         { id: "tiers", icon: "📦", label: "Tier Demos" },
         { id: "analytics", icon: "📊", label: "Global Analytics" },
         { id: "billing", icon: "💳", label: "Billing" },
@@ -225,7 +249,7 @@ function SkillivioSuperAdmin({ ...props }) {
                     tenant={editingTenant}
                     onCancel={() => setShowEditForm(false)}
                     onSave={(updatedTenant) => {
-                        dispatch(updatesaTenants({ id: updatedTenant.id, updatedData: updatedTenant }))// Redux action to update tenant
+                        dispatch(updatetenants({ id: updatedTenant.id, updatedData: updatedTenant }))// Redux action to update tenant
                         setShowEditForm(false);
                         notify(`Tenant "${updatedTenant.name}" updated successfully!`);
                     }}
@@ -240,7 +264,14 @@ function SkillivioSuperAdmin({ ...props }) {
                 <Toast notification={notification} />
                 <div style={{ padding: "20px 18px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 38, height: 38, background: SKP, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>S</div>
+
+                        <img src='/logo/skillivioLogo.jpeg' alt='skillivio' style={{
+                            width: 34, height: 34, background: p, borderRadius: 9, display: "flex", alignItems: "center",
+                            justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff"
+                        }} />
+
+
+                        {/* <div style={{ width: 38, height: 38, background: SKP, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>S</div> */}
                         <div>
                             <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>Skillivio</div>
                             <div style={{ color: SKP, fontSize: 10, fontWeight: 600 }}>SUPER ADMIN</div>
@@ -285,8 +316,8 @@ function SkillivioSuperAdmin({ ...props }) {
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
                             <StatCard icon="🏢" value={active} label="Active Tenants" color={SKP} />
-                            <StatCard icon="👥" value={totalLrn.toLocaleString()} label="Total Learners" color="#6366F1" />
-                            <StatCard icon="💰" value={"R" + totalMRR.toLocaleString()} label="Monthly Revenue" color="#10B981" />
+                            <StatCard icon="👥" value={totalLrn?.toLocaleString()} label="Total Learners" color="#6366F1" />
+                            <StatCard icon="💰" value={"R" + totalMRR?.toLocaleString()} label="Monthly Revenue" color="#10B981" />
                             <StatCard icon="⏳" value={pending || 0} label="Pending Onboarding" color="#F59E0B" />
                         </div>
                         <div style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
@@ -297,20 +328,50 @@ function SkillivioSuperAdmin({ ...props }) {
                                     })}
                                 </tr></thead>
                                 <tbody>
-                                    {saTenants.map(function (t) {
+                                    {tenants.filter((t) => t.slug !== "skillivio").map(function (t) {
                                         return (
                                             <tr key={t.id} style={{ borderBottom: "1px solid #f8fafc" }}>
                                                 <td style={{ padding: "12px" }}>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                        <div style={{ width: 34, height: 34, background: t.color, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: 14 }}>{t.logo}</div>
+                                                        {/* <div style={{ width: 34, height: 34, background: t.color, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: 14 }}>{t.logo}</div> */}
+                                                        <div
+                                                            style={{
+                                                                width: 34,
+                                                                height: 34,
+                                                                background: t.color || "#ccc",
+                                                                borderRadius: 8,
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                                color: "#fff",
+                                                                fontWeight: 900,
+                                                                fontSize: 14,
+                                                                overflow: "hidden"
+                                                            }}
+                                                        >
+                                                            {t.logo && t.logo.startsWith("data:") ? (
+                                                                // If logo is a base64/image URL
+                                                                <img
+                                                                    src={t.logo}
+                                                                    alt={t.name}
+                                                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                                />
+                                                            ) : t.logo ? (
+                                                                // If logo is a single letter
+                                                                t.logo
+                                                            ) : (
+                                                                // Fallback
+                                                                t.name.charAt(0).toUpperCase()
+                                                            )}
+                                                        </div>
                                                         <div><div style={{ fontWeight: 700, fontSize: 13 }}>{t.name}</div><div style={{ fontSize: 10, color: "#94a3b8" }}>{t.slug}.skillivio.com</div></div>
                                                     </div>
                                                 </td>
                                                 <td style={{ padding: "12px" }}><span style={{ background: tierColor[t.tier] + "15", color: tierColor[t.tier], borderRadius: 100, padding: "3px 10px", fontSize: 11, fontWeight: 700, textTransform: "capitalize" }}>{TIER_DATA[t.tier] && TIER_DATA[t.tier].emoji} {t.tier}</span></td>
                                                 <td style={{ padding: "12px", fontSize: 12, color: "#64748b" }}>{t.domain}</td>
                                                 <td style={{ padding: "12px" }}><div style={{ fontSize: 12, fontWeight: 600 }}>{t.contact}</div><div style={{ fontSize: 10, color: "#94a3b8" }}>{t.email}</div></td>
-                                                <td style={{ padding: "12px", fontSize: 13, fontWeight: 600 }}>{t.learners.toLocaleString()}</td>
-                                                <td style={{ padding: "12px", fontSize: 13, fontWeight: 700, color: "#10B981" }}>R{t.mrr.toLocaleString()}/mo</td>
+                                                <td style={{ padding: "12px", fontSize: 13, fontWeight: 600 }}>{t?.learners?.toLocaleString()}</td>
+                                                <td style={{ padding: "12px", fontSize: 13, fontWeight: 700, color: "#10B981" }}>R{t?.mrr?.toLocaleString()}/mo</td>
                                                 <td style={{ padding: "12px" }}><span style={{ background: t.status === "Active" ? "#10B98118" : "#FEF3C7", color: t.status === "Active" ? "#10B981" : "#92400E", borderRadius: 100, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{t.status}</span></td>
                                                 <td style={{ padding: "12px" }}>
                                                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -374,7 +435,7 @@ function SkillivioSuperAdmin({ ...props }) {
                             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Revenue by Tier</h3>
                             {Object.entries({ foundation: 1490, professional: 2990, enterprise: 5490 }).map(function (pair) {
                                 var tier = pair[0], rate = pair[1];
-                                var count = saTenants.filter(function (t) { return t.tier === tier && t.status === "Active"; }).length;
+                                var count = tenants.filter(function (t) { return t.tier === tier && t.status === "Active"; }).length;
                                 var rev = count * rate;
                                 return (
                                     <div key={tier} style={{ marginBottom: 14 }}>
@@ -398,7 +459,7 @@ function SkillivioSuperAdmin({ ...props }) {
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
                             <StatCard icon="💰" value={"R" + totalMRR.toLocaleString()} label="Total MRR" color={SKP} />
                             <StatCard icon="📈" value={"R" + (totalMRR * 12).toLocaleString()} label="ARR (Projected)" color="#10B981" />
-                            <StatCard icon="🏢" value={active + "/" + saTenants.length} label="Active / Total" color="#6366F1" />
+                            <StatCard icon="🏢" value={active + "/" + tenants.length} label="Active / Total" color="#6366F1" />
                             <StatCard icon="⏳" value={pending || 0} label="Pending EFTs" color="#F59E0B" />
                         </div>
 
@@ -453,7 +514,7 @@ function SkillivioSuperAdmin({ ...props }) {
                         {/* ── Tenant billing status ── */}
                         <div style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
                             <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Tenant Billing Status</h3>
-                            {Object.values(saTenants).slice(0, 4).map(function (t) {
+                            {Object.values(tenants).slice(0, 4).map(function (t) {
                                 var tierColor = { foundation: "#10B981", professional: "#7C3AED", enterprise: "#0EA5E9" }[t.tier] || "#94a3b8";
                                 return (
                                     <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: "1px solid #f8fafc" }}>

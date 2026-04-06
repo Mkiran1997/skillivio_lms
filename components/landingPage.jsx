@@ -4,9 +4,6 @@ import Toast from './toast';
 
 
 function LandingPage({ ...props }) {
-    // var p = props.p, s = props.s, tenant = props.tenant, setView = props.setView,
-    //     currentTenant = props.currentTenant, setCurrentTenant = props.setCurrentTenant,
-    //     notification = props.notification, css = props.css;
 
     const { p, s, tenant, setView, currentTenant, setCurrentTenant, notification, css } = props;
 
@@ -17,8 +14,12 @@ function LandingPage({ ...props }) {
             <style>{GLOBAL_CSS}</style>
             <nav style={{ padding: "18px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 38, height: 38, background: p, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }}>{tenant.logo}</div>
-                    <div>
+                    {
+                        currentTenant === "skillivio" ?
+                            <img src='/logo/skillivioLogo.jpeg' alt='skillivio' style={{ width: 38, height: 38, objectFit: "contain",borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
+                            : <div style={{ width: 38, height: 38, background: p, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }}>{tenant.logo}</div>
+
+                    }                    <div>
                         <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>{tenant.name}</div>
                         <div style={{ color: p, fontSize: 11 }}>{tenant.tagline}</div>
                     </div>
@@ -39,7 +40,7 @@ function LandingPage({ ...props }) {
                     <div style={{ display: "flex", gap: 14 }}>
                         <button onClick={function () { setView("login"); }} style={{ ...css.btn(p), padding: "14px 28px", fontSize: 16 }}>Launch Platform →</button>
                     </div>
-                    <div style={{ display: "flex", gap: 32, marginTop: 48}}>
+                    <div style={{ display: "flex", gap: 32, marginTop: 48 }}>
                         {[["500+", "SDPs Trust Us"], ["50K+", "Learners Served"], ["QCTO", "Aligned"]].map(function (pair) {
                             return <div key={pair[1]}><div style={{ fontSize: 22, fontWeight: 900, color: p }}>{pair[0]}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{pair[1]}</div></div>;
                         })}

@@ -6,8 +6,9 @@ import uiReducer from "./slices/uiSlice";
 import courseReducer from "./slices/courseSlice";
 import learnersReducer from "./slices/learnerSlice";
 import bankdetailReducer from "./slices/bankDetailSlice";
-import saTenantReducer from "./slices/saTenantSlice";
+import tenantReducer from "./slices/tenantSlice";
 import enrollmentReducer from "./slices/enrollmentSlice";
+import userReducer from "./slices/authSlice";
 
 export const makeStore = () => {
   const store = configureStore({
@@ -17,8 +18,9 @@ export const makeStore = () => {
       course:courseReducer,
       learners:learnersReducer,
       bankdetail:bankdetailReducer,
-      saTenants:saTenantReducer,
+      tenants:tenantReducer,
       enrollment:enrollmentReducer,
+      user:userReducer,
       [apiSlice.reducerPath]: apiSlice.reducer,
     },
     middleware: (getDefaultMiddleware) =>

@@ -15,7 +15,10 @@ const courseSchema = new mongoose.Schema({
     dripEnabled: { type: Boolean, default: false },
     progress: { type: Number, default: 0 },
     status: { type: String, default: "DRAFT" },
-    thumb: { type: String, default: "" }
+    type: { type: String, required: true },
+    thumb: { type: String, default: "" },
+    setaAffiliation: { type: String, default: "" },
+    issueCertificate: { type: Boolean, default: true }
 }, { timestamps: true });
 
 export default mongoose.models.Course || mongoose.model('Course', courseSchema);

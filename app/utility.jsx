@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { USER_ACCOUNTS } from './mockData';
+
 import * as xlsx from 'xlsx';
 
-export function getUser(email  , pw  ) {
-    return USER_ACCOUNTS.find(function (u) {
+export function getUser(users,email, pw  ) {
+    return users.find(function (u) {
         return u.email.toLowerCase() === email.toLowerCase().trim() && u.password === pw;
     }) || null;
 }

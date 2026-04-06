@@ -9,12 +9,14 @@ export async function GET() {
 
         const users = await user.find().populate('tenantId');
 
-        const mapped = users.map(u => ({
-            ...u.toObject(),
-            id: u._id.toString(),
-            tenant: u.tenantId 
-        }));
-
+        const mapped = users.map(u => {
+            const obj = u.toObject();
+            return {
+                ...obj,
+                id: obj._id.toString(),
+                tenant: obj.tenantId // overwrite tenant with ID
+            };
+        });
         return NextResponse.json(mapped);
     } catch (err) {
         console.error("GET error:", err);
