@@ -18,7 +18,8 @@ const courseSchema = new mongoose.Schema({
     type: { type: String, required: true },
     thumb: { type: String, default: "" },
     setaAffiliation: { type: String, default: "" },
-    issueCertificate: { type: Boolean, default: true }
+    issueCertificate: { type: Boolean, default: true },
+    modules: [{ type: mongoose.Schema.Types.ObjectId, ref: "Module" }] 
 }, { timestamps: true });
 
 export default mongoose.models.Course || mongoose.model('Course', courseSchema);

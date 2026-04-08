@@ -23,18 +23,19 @@ function LearnerPortal({ ...props }) {
     }, [dispatch]);
 
     const userEnrollment = useMemo(() => {
-        return Enrollment.filter((enroll) => enroll.userId._id === currentUser._id)
+        return Enrollment.filter((enroll) => enroll.learnerId.userId === currentUser._id)
     }, [Enrollment, currentUser])
+
 
     var [tab, setTab] = useState("home");
     const [uploadedFilesByCourse, setUploadedFilesByCourse] = useState({});
     var [enrollingCourse, setEnrolling] = useState(null);
     var [myEnrolments, setMyEnrolments] = useState([]);
-    var myCourses = Enrollment.filter((enrol)=> enrol.userId._id===currentUser._id);
+    var myCourses = Enrollment.filter((enrol)=> enrol.learnerId.userId===currentUser._id);
     var browseable = Course.filter(function (c) { return c.status === "PUBLISHED" && currentUser.tenantId.slug === c.type });
     var browsePag = usePagination(browseable, 6);
-    const userCourses = Enrollment.map((course) => course.courseId);
-    var myCourPag = usePagination(userCourses, 4);
+    var myCourPag = usePagination(myCourses, 4);
+
 
     var SB_ITEMS = [
         { id: "home", icon: "🏠", label: "My Dashboard" },
@@ -204,7 +205,7 @@ function LearnerPortal({ ...props }) {
                     </div>
                 )}
 
-                {tab === "browse" && (
+                 {tab === "browse" && (
                     <div className="fade">
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                             <h1 style={css.h1}>Browse Courses</h1>
@@ -212,7 +213,7 @@ function LearnerPortal({ ...props }) {
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 18 }}>
                             {browsePag.slice.map(function (course) {
-                                const isEnrolling = Enrollment.some((enrol) => enrol.courseId._id === course.id && enrol.userId._id=== currentUser._id);
+                                const isEnrolling = Enrollment.some((enrol) => enrol.courseId._id === course.id && enrol.learnerId?.userId === currentUser._id);
                                 return (
                                     <div key={course.id} style={{ ...css.card, padding: 0, overflow: "hidden", cursor: "pointer", transition: "all 0.2s" }}
                                         onMouseEnter={function (e) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 28px rgba(0,0,0,0.12)"; }}
@@ -248,6 +249,7 @@ function LearnerPortal({ ...props }) {
                         <PaginationBar {...browsePag} perPage={6} color={p} />
                     </div>
                 )}
+
 
                 {tab === "courses" && (
                     <div className="fade">

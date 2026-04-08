@@ -18,6 +18,7 @@ function LoginPage({ ...props }) {
     const { User } = useSelector(state => state.user);
     const dispatch = useDispatch();
 
+
     useEffect(() => {
         dispatch(fetchUsers());
     }, [dispatch])
@@ -35,10 +36,14 @@ function LoginPage({ ...props }) {
         { label: "👤 Learner", e: "thabo@example.co.za", pw: "Learner@123", c: "#10B981" },
         { label: "🛡 Admin", e: "admin@skillivio.co.za", pw: "Admin@2026!", c: p },
         { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
-    ] : [
-        { label: "👤 Learner", e: "thabo@example.co.za", pw: "Learner@123", c: "#10B981" },
+    ] : currentTenant==="acme"? [
+        { label: "👤 Learner", e: "nomsa@example.co.za", pw: "nomsa!789", c: "#10B981" },
         { label: "🛡 Admin", e: "admin@acme.co.za", pw: "Acme@2026!", c: p },
-        { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
+        // { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
+    ]:[
+        { label: "👤 Learner", e: "ayanda@example.co.za", pw: "Ayanda!456", c: "#10B981" },
+        { label: "🛡 Admin", e: "admin@techpro.co.za", pw: "TechPro!456", c: p },
+        // { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
     ];
     const demosToShow = demos.filter((d, index) => {
         if (index === demos.length - 1 && tenant.name !== "Skillivio Demo") return false;
@@ -138,7 +143,7 @@ function LoginPage({ ...props }) {
                             DEMO ACCOUNTS — CLICK TO FILL
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8 }}>
-                            {demosToShow.map(function (d) {
+                            {demos.map(function (d) {
                                 return (
                                     <button key={d.label} onClick={function () { setEmail(d.e); setPw(d.pw); setErr(""); }}
                                         style={{

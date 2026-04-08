@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { createEnrollment } from "@/store/slices/enrollmentSlice";
 import { fetchCourses } from "@/store/slices/courseSlice";
 import { fetchUsers } from "@/store/slices/authSlice";
+import { fetchlearners } from "@/store/slices/learnerSlice";
 
 
 
@@ -32,18 +33,29 @@ function F(fp) {
 }
 
 function EnrolmentForm({ ...props }) {
-    const { course, learnerUser, onSubmit, onCancel, p, s, notify,currentUser } = props;
+    const { course, learnerUser, onSubmit, onCancel, p, s, notify, currentUser } = props;
     const { Course, loading, error } = useSelector(state => state.course);
-       const { User } = useSelector(state => state.user);
+    const { Learners } = useSelector((state) => state.learners);
+    const { Enrollment } = useSelector(state => state.enrollment);
+
 
 
     var today = new Date().toISOString().split("T")[0];
     const [selectedCourse, setSelectedCourse] = useState("")
+    const [selectedLearner, setSelectedLearner] = useState("")
+    const AdminCourse = Course.filter((course) => course.type === learnerUser?.tenantId.slug && course.status === "PUBLISHED")
+    console.log(Course);
+    const tierLearner = Learners.filter(
+        (l) => l.userId.tenantId.slug === learnerUser.tenantId.slug,
+    );
 
+    console.log(selectedLearner);
     const selectedCourseDetail = useMemo(() => {
-        return Course.find((course) => course._id === selectedCourse);
-    }, [selectedCourse, Course])
-    //   
+        return AdminCourse.find((course) => course._id === selectedCourse);
+    }, [selectedCourse, AdminCourse])
+
+
+
 
     var [step, setStep] = useState("A");
     var [secA, setSecA] = useState({ saqaId: "", nqfLevel: "", credits: 0, intakeNo: "", startDate: today, endDate: "", mode: "Blended" });
@@ -76,65 +88,126 @@ function EnrolmentForm({ ...props }) {
 
         notify(DOC_LABELS[key] + " uploaded!");
     }
-    const { Enrollment } = useSelector(state => state.enrollment);
 
 
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(fetchCourses());
         dispatch(fetchUsers());
+        dispatch(fetchlearners())
     }, [dispatch])
 
     useEffect(() => {
-        if (Course.length > 0 && !selectedCourse) {
-            setSelectedCourse(Course[0]._id);
+        if (AdminCourse.length > 0 && !selectedCourse) {
+            setSelectedCourse(AdminCourse[0]._id);
         }
-    }, [Course, selectedCourse]);
+    }, [AdminCourse, selectedCourse]);
 
 
+useEffect(() => {
+    // Check if a learner is selected
+    if (selectedLearner) {
+        // Find the learner's data from tierLearner
+        const selectedLearnerData = tierLearner.find((learner) => learner._id === selectedLearner);
+
+        // Update secB.fullName whenever selectedLearner changes
+        if (selectedLearnerData) {
+            setSecB((prev) => ({
+                ...prev,
+                fullName: selectedLearnerData.userId.name,  // Set the name based on the selected learner
+            }));
+        }
+    }
+}, [selectedLearner, tierLearner]); // Dependency on selectedLearner and tierLearner
 
     useEffect(() => {
         if (selectedCourseDetail) {
-            setSecA((prev) => ({
-                ...prev,
-                nqfLevel: String(selectedCourseDetail.nqf),
-                credits: selectedCourseDetail.credits
-            }));
+            setSecA((prev) => {
+                if (
+                    prev.nqfLevel !== String(selectedCourseDetail.nqf) ||
+                    prev.credits !== selectedCourseDetail.credits
+                ) {
+                    return {
+                        ...prev,
+                        nqfLevel: String(selectedCourseDetail.nqf),
+                        credits: selectedCourseDetail.credits
+                    };
+                }
+                return prev; // No changes, avoid re-render
+            });
         } else if (course?.nqf) {
-            setSecA((prev) => ({
-                ...prev,
-                nqfLevel: course.nqf,
-                credits: course.credits
-            }));
+            setSecA((prev) => {
+                if (prev.nqfLevel !== course.nqf || prev.credits !== course.credits) {
+                    return {
+                        ...prev,
+                        nqfLevel: course.nqf,
+                        credits: course.credits
+                    };
+                }
+                return prev;
+            });
         }
     }, [selectedCourseDetail, course]);
 
-
     function handleSubmit() {
+        // Check for selected learner
+        if (!selectedLearner) {
+            if (!secB.fullName) {
+                notify("Full name required in Section B", "error");
+                setStep("B");
+                return;
+            }
+        }
 
-        if (!secB.fullName) { notify("Full name required in Section B", "error"); setStep("B"); return; }
-        if (!secB.idNumber) { notify("ID number required in Section B", "error"); setStep("B"); return; }
-        if (!secF.agreed) { notify("Please accept the declaration in Section F", "error"); setStep("F"); return; }
-        if (!secG.consent) { notify("POPIA consent required in Section G", "error"); setStep("G"); return; }
-        setSubmitting(true);
-        var record = { course: course, secA: secA, secB: secB, secC: secC, secD: secD, secE: secE, secF: secF, secG: secG, secH: secH, docs: docs, submittedAt: new Date().toISOString() };
+        // Validate other fields
+        if (!secB.idNumber) {
+            notify("ID number required in Section B", "error");
+            setStep("B");
+            return;
+        }
+        if (!secF.agreed) {
+            notify("Please accept the declaration in Section F", "error");
+            setStep("F");
+            return;
+        }
+        if (!secG.consent) {
+            notify("POPIA consent required in Section G", "error");
+            setStep("G");
+            return;
+        }
+
+        // Handle QCTO Disclaimer condition
         if ((course?.setaAffiliation === "QCTO (Direct)" || selectedCourseDetail?.setaAffiliation === "QCTO (Direct)") && !disclaimerAccepted) {
             notify("Please accept the QCTO Disclaimer before enrolling.", "error");
             return;
         }
-        const usersId = User.find((user) => user.name === secB.fullName).id;
-        console.log(usersId);
-        var key = (learnerUser ? learnerUser.id : "u") + "_" + course === undefined ? selectedCourseDetail?._id : course?.id;
+
+        setSubmitting(true);
+
+        // Retrieve the selected learner data based on selectedLearner
+        const selectedLearnerData = Learners.find((learner) => learner._id === selectedLearner);
+
+
+        // If the learner is not found, show an error
+        if (!selectedLearnerData) {
+            notify("Selected learner not found", "error");
+            setSubmitting(false);
+            return;
+        }
+
+        // Construct the enrollment record
         const enrollmentRecord = {
-            courseId: course === undefined ? selectedCourseDetail._id : course._id,          // ObjectId of course
-            userId: learnerUser?._id || usersId, // ObjectId of user (or null if guest)
+            courseId: course ? course._id : selectedCourseDetail._id, // ObjectId of course
+            learnerId: course ? Learners.find((learner) => learner.userId._id === learnerUser._id)._id : selectedLearnerData._id, // ObjectId of learner
             saqaId: secA.saqaId,
             intakeNo: secA.intakeNo,
             startDate: secA.startDate ? new Date(secA.startDate) : new Date(),
             endDate: secA.endDate ? new Date(secA.endDate) : null,
             mode: secA.mode,
-
-            personal: { ...secB },
+            personal: {
+                ...secB,
+                fullname: course ? secB.fullName : tierLearner.find((learner) => learner.id === selectedLearner)?.userId.name, // Use selected learner's name if course is undefined
+            },
             employment: { ...secC },
             enteyRequest: [...secD],
             assessment: {
@@ -145,14 +218,18 @@ function EnrolmentForm({ ...props }) {
             popia: { ...secG },
             provider: { ...secH },
             docs: { ...docs },
-            submittedAt: new Date()
+            submittedAt: new Date(),
         };
-        // ENROLMENT_STORE[key] = record;
+
+        // Dispatch the enrollment record
         dispatch(createEnrollment(enrollmentRecord));
 
-        setTimeout(function () { setSubmitting(false); onSubmit(record); }, 700);
+        // Handle submission and async behavior
+        setTimeout(() => {
+            setSubmitting(false);
+            onSubmit(enrollmentRecord);
+        }, 700);
     }
-
 
     function SH(sp) {
         var letter = sp.letter, title = sp.title;
@@ -202,7 +279,7 @@ function EnrolmentForm({ ...props }) {
                                     <select
                                         value={selectedCourse}
                                         onChange={(e) => setSelectedCourse(e.target.value)}
-                                        disabled={!Course.length}
+                                        disabled={!AdminCourse.length}
                                         style={{
                                             width: "100%",
                                             padding: "8px 12px",
@@ -211,10 +288,10 @@ function EnrolmentForm({ ...props }) {
                                             border: `1px solid ${p}50`,
                                             outline: "none",
                                             background: "#fff",
-                                            cursor: Course.length ? "pointer" : "not-allowed",
+                                            cursor: AdminCourse.length ? "pointer" : "not-allowed",
                                         }}
                                     >
-                                        {Course.filter((course)=> course.type===currentUser.tenantId.slug).map((courseItem) => (
+                                        {AdminCourse.map((courseItem) => (
                                             <option key={courseItem._id} value={courseItem._id}>
                                                 {courseItem.title}
                                             </option>
@@ -224,8 +301,7 @@ function EnrolmentForm({ ...props }) {
                                 }
 
                             </div>
-
-                            {(Course?.setaAffiliation === "QCTO (Direct)" || selectedCourseDetail?.setaAffiliation === "QCTO (Direct)") && (
+                            {(course?.setaAffiliation === "QCTO (Direct)" || selectedCourseDetail?.setaAffiliation === "QCTO (Direct)") && (
                                 <div style={{
                                     border: "1px solid #fbbf24",       // golden border to match warning
                                     borderRadius: "12px",
@@ -303,8 +379,36 @@ function EnrolmentForm({ ...props }) {
 
                     {step === "B" && (<>
                         <SH letter="B" title="Learner Personal Details" />
+
+
                         <div style={cardSt}>
-                            <F label="Full Name (as per ID)" val={secB.fullName} onChange={function (v) { setSecB(function (s) { return { ...s, fullName: v }; }); }} required />
+                            {course === undefined ? (
+                                <select
+                                    value={selectedLearner}
+                                    onChange={(e) => setSelectedLearner(e.target.value)}
+                                    disabled={!tierLearner.length}
+                                    style={{
+                                        width: "100%",
+                                        padding: "8px 12px",
+                                        fontSize: 13,
+                                        borderRadius: 6,
+                                        border: `1px solid ${p}50`,
+                                        outline: "none",
+                                        background: "#fff",
+                                        cursor: tierLearner.length ? "pointer" : "not-allowed",
+                                    }}
+                                >
+                                    {tierLearner.map((learnerItem) => (
+                                        <option key={learnerItem._id} value={learnerItem._id}>
+                                            {learnerItem.userId.name}
+                                        </option>
+                                    ))}
+                                </select>) :
+                                <F label="Full Name (as per ID)" val={secB.fullName} onChange={function (v) { setSecB(function (s) { return { ...s, fullName: v }; }); }} required />
+
+                            }
+                            <br />
+                            <br />
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                                 <F label="ID Number / Passport Number" val={secB.idNumber} onChange={function (v) { setSecB(function (s) { return { ...s, idNumber: v }; }); }} required />
                                 <F label="Date of Birth" val={secB.dob} onChange={function (v) { setSecB(function (s) { return { ...s, dob: v }; }); }} type="date" />
