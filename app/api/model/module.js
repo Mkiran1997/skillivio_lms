@@ -7,6 +7,7 @@ const moduleSchema = new mongoose.Schema({
         ref: "Course",
         required: true,
     },
+     lessons: [{ type: mongoose.Schema.Types.ObjectId, ref: "Lesson" }] 
 }, { timestamps: true });
 
 export default mongoose.models.module || mongoose.model("module", moduleSchema);

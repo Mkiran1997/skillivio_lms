@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
 import enrollment from "@/app/api/model/enrollment";
+import learners from "@/app/api/model/learner";
 
 export async function GET() {
     try {
         await dbConnect();
         const enrollments = await enrollment.find()
-            .populate("userId")
+            .populate("learnerId")
             .populate("courseId");
         const mapped = enrollments.map(c => ({ ...c.toObject(), id: c._id.toString() }));
         return NextResponse.json(mapped);

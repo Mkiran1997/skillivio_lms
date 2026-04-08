@@ -1,6 +1,4 @@
 import mongoose from "mongoose";
-import user from "./user"; // <-- make sure this is imported
-import course from "./course"
 const enrollmentSchema = new mongoose.Schema({
 
     courseId: {
@@ -8,9 +6,9 @@ const enrollmentSchema = new mongoose.Schema({
         ref: "Course",
         required: true,
     },
-    userId: {
+    learnerId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "users",
+        ref: "learners",
         required: true,
     },
 

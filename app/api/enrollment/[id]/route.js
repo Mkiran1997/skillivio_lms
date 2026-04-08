@@ -8,7 +8,7 @@ export async function GET(req, { params }) {
     await dbConnect();
     const paramsRes = await params;
     const enrollments = await enrollment.findById(paramsRes.id)
-      .populate("userId")
+      .populate("learnerId")
       .populate("courseId");
     if (!enrollments) return NextResponse.json({ error: "enrollments not found" }, { status: 404 });
     return NextResponse.json({ ...enrollments.toObject(), id: enrollments._id.toString() });
