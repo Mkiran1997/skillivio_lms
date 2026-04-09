@@ -131,6 +131,8 @@ function App() {
     if (course) {
       // Edit existing course — pre-populate all fields
       setEditingCourse(course);
+
+      // Set the new course data, including modules and lessons
       setNewCourse({
         title: course.title || "",
         cat: course.cat || "Technology",
@@ -144,46 +146,16 @@ function App() {
         saqaId: course.saqaId || "",
         passingScore: course.passingScore || 75,
         dripEnabled: course.dripEnabled || false,
+        modules: course.modules.map((module) => ({
+          _id: module._id, // Ensure module _id is present
+          moduleName: module.moduleName, // Ensure moduleName is set
+          lessons: module.lessons || [], // Ensure lessons are present
+        })),
       });
-      // Build editable modules from course.modules or generate stubs
-      var mods =
-        course.modules && course.modules.length
-          ? course.modules
-          : Array.from(
-              { length: Math.min(course.lessons || 3, 4) },
-              function (_, mi) {
-                return {
-                  id: "m" + (mi + 1),
-                  title:
-                    "Module " +
-                    (mi + 1) +
-                    ": " +
-                    (mi === 0
-                      ? "Introduction"
-                      : mi === 1
-                        ? "Core Concepts"
-                        : mi === 2
-                          ? "Practical Application"
-                          : "Assessment"),
-                  lessons: [
-                    {
-                      id: "l" + (mi + 1) + "_1",
-                      title: "Lesson 1",
-                      type: "VIDEO",
-                      desc: "",
-                    },
-                    {
-                      id: "l" + (mi + 1) + "_2",
-                      title: "Lesson 2",
-                      type: "TEXT",
-                      desc: "",
-                    },
-                  ],
-                };
-              },
-            );
-      setCourseModules(mods);
-      setActiveModuleIdx(0);
+
+      // Set the modules in the course
+      setCourseModules(course.modules || []);
+      setActiveModuleIdx(0); // Or set based on what module needs to be active
     } else {
       // Create new course
       setEditingCourse(null);
@@ -198,6 +170,7 @@ function App() {
               title: "Welcome & Overview",
               type: "VIDEO",
               desc: "",
+              url:"",
             },
           ],
         },
@@ -208,7 +181,6 @@ function App() {
   }
 
   async function saveCourse() {
-    console.log(editingCourse._id)
     const title = newCourse.title ? newCourse.title.trim() : "";
     if (!title) {
       notify("Course title is required.", "error");
@@ -220,12 +192,36 @@ function App() {
       0,
     );
 
-    // Validate other fields if necessary (e.g., price, passingScore)
-    if (!newCourse.price && !newCourse.free) {
-      notify("Price is required unless the course is free.", "error");
-      return;
+    // Validate modules and lessons before sending to the backend
+    for (const module of courseModules) {
+      if (!module.moduleName) {
+        notify("Module name is required.", "error");
+        return;
+      }
+
+      if (!module.lessons || module.lessons.length === 0) {
+        notify("Each module should have at least one lesson.", "error");
+        return;
+      }
+
+      for (const lesson of module.lessons) {
+        if (!lesson.title) {
+          notify("Each lesson should have a title.", "error");
+          return;
+        }
+
+        if (!lesson.type) {
+          notify(
+            "Each lesson should have a type (e.g., VIDEO, TEXT).",
+            "error",
+          );
+          return;
+        }
+      }
     }
 
+    
+    // Construct courseData with the full module object
     const courseData = {
       title: title,
       cat: newCourse.cat,
@@ -242,13 +238,14 @@ function App() {
       modules: courseModules,
       lessons: totalLessons,
       setaAffiliation: newCourse.setaAffiliation,
-       type:
+      type:
         currentUser.tenantId.slug === "acme"
           ? "acme"
           : currentUser.tenantId.slug === "techpro"
             ? "techpro"
             : "skillivio",
     };
+
 
     try {
       if (editingCourse) {

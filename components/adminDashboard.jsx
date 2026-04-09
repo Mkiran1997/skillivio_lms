@@ -64,6 +64,7 @@ function AdminDashboard({ ...props }) {
   const [openEnrolmentForm, setOpenEnrolmentForm] = useState(false);
   const firstInputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [selectedLessonType, setSelectedLessonType] = useState("VIDEO");
 
   const dispatch = useDispatch();
 
@@ -73,6 +74,7 @@ function AdminDashboard({ ...props }) {
   const AdminCourse = useMemo(() => {
     return Course.filter((c) => c.type === currentUser.tenantId.slug);
   }, [Course, currentUser]);
+
   const tierLearner = Learners.filter(
     (l) => l.userId.tenantId.slug === currentUser.tenantId.slug,
   );
@@ -1149,7 +1151,7 @@ function AdminDashboard({ ...props }) {
                             background: "transparent",
                             cursor: "text",
                           }}
-                          value={mod.title}
+                          value={mod.moduleName || ""}
                           onClick={function (e) {
                             e.stopPropagation();
                           }}
@@ -1252,32 +1254,122 @@ function AdminDashboard({ ...props }) {
                                     }}
                                     placeholder="Lesson title"
                                   />
-                                  <input
-                                    style={{
-                                      ...css.input,
-                                      padding: "5px 10px",
-                                      fontSize: 11,
-                                      color: "#64748b",
-                                    }}
-                                    value={les.desc || ""}
-                                    onChange={function (e) {
-                                      var v = e.target.value;
-                                      setCourseModules(function (ms) {
-                                        return ms.map(function (m, i) {
-                                          if (i !== mi) return m;
-                                          var newL = m.lessons.map(
-                                            function (l, j) {
-                                              return j === li
-                                                ? { ...l, desc: v }
-                                                : l;
-                                            },
-                                          );
-                                          return { ...m, lessons: newL };
+                                  {selectedLessonType === "TEXT" &&
+                                  les.type === "TEXT" ? (
+                                    <input
+                                      key="text-input"
+                                      style={{
+                                        ...css.input,
+                                        padding: "5px 10px",
+                                        fontSize: 11,
+                                        color: "#64748b",
+                                      }}
+                                      value={les.desc || ""}
+                                      onChange={function (e) {
+                                        var v = e.target.value;
+                                        setCourseModules(function (ms) {
+                                          return ms.map(function (m, i) {
+                                            if (i !== mi) return m;
+                                            var newL = m.lessons.map(
+                                              function (l, j) {
+                                                return j === li
+                                                  ? { ...l, desc: v }
+                                                  : l;
+                                              },
+                                            );
+                                            return { ...m, lessons: newL };
+                                          });
                                         });
-                                      });
-                                    }}
-                                    placeholder="Brief description (optional)"
-                                  />
+                                      }}
+                                      placeholder="Brief description (optional)"
+                                    />
+                                  ) : (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "4px",
+                                      }}
+                                    >
+                                      {/* 1. The actual file input (no value prop!) */}
+                                      <input
+                                        key="file-input"
+                                        type="file"
+                                        style={{
+                                          ...css.input,
+                                          padding: "5px 10px",
+                                          fontSize: 11,
+                                          color: "#64748b",
+                                        }}
+                                        onChange={function (e) {
+                                          var file = e.target.files[0];
+                                          if (!file) return;
+
+                                          // Create a temporary local URL for previewing
+                                          var previewUrl =
+                                            URL.createObjectURL(file);
+
+                                          setCourseModules(function (ms) {
+                                            return ms.map(function (m, i) {
+                                              if (i !== mi) return m;
+                                              return {
+                                                ...m,
+                                                lessons: m.lessons.map(
+                                                  function (l, j) {
+                                                    return j === li
+                                                      ? {
+                                                          ...l,
+                                                          file: file,
+                                                          tempName: file.name,
+                                                          url: previewUrl, // Set the preview URL here
+                                                        }
+                                                      : l;
+                                                  },
+                                                ),
+                                              };
+                                            });
+                                          });
+                                        }}
+                                      />
+
+                                      {/* 2. Show the existing database URL if it exists */}
+                                      {les.url && !les.tempName && (
+                                        <div
+                                          style={{
+                                            fontSize: 10,
+                                            color: "#3b82f6",
+                                            paddingLeft: 5,
+                                          }}
+                                        >
+                                          Current File: {les.url}
+                                          <a
+                                            href={les.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            style={{
+                                              textDecoration: "underline",
+                                            }}
+                                          >
+                                            View existing
+                                          </a>
+                                        </div>
+                                      )}
+
+                                      {/* 3. Show the new filename if the user just selected one */}
+                                      {les.tempName && (
+                                        <div
+                                          style={{
+                                            fontSize: 10,
+                                            color: "#22c55e",
+                                            paddingLeft: 5,
+                                          }}
+                                        >
+                                          New file selected:{" "}
+                                          <strong>{les.tempName}</strong>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                                 <select
                                   style={{
@@ -1288,6 +1380,7 @@ function AdminDashboard({ ...props }) {
                                   value={les.type || "VIDEO"}
                                   onChange={function (e) {
                                     var v = e.target.value;
+                                    setSelectedLessonType(e.target.value);
                                     setCourseModules(function (ms) {
                                       return ms.map(function (m, i) {
                                         if (i !== mi) return m;
@@ -1355,7 +1448,6 @@ function AdminDashboard({ ...props }) {
                           <button
                             onClick={function () {
                               var newLes = {
-                                id: "l_" + Date.now(),
                                 title: "New Lesson",
                                 type: "VIDEO",
                                 desc: "",
@@ -2090,11 +2182,11 @@ function AdminDashboard({ ...props }) {
                 >
                   ⬆ Export Learners
                 </button>
-                 <button
+                <button
                   // onClick={() => downloadCSV(LearnerCourseWise)}
                   style={css.btn(p)}
                 >
-                   ⬇ Import Learners
+                  ⬇ Import Learners
                 </button>
               </div>
             </div>

@@ -44,12 +44,10 @@ function EnrolmentForm({ ...props }) {
     const [selectedCourse, setSelectedCourse] = useState("")
     const [selectedLearner, setSelectedLearner] = useState("")
     const AdminCourse = Course.filter((course) => course.type === learnerUser?.tenantId.slug && course.status === "PUBLISHED")
-    console.log(Course);
     const tierLearner = Learners.filter(
         (l) => l.userId.tenantId.slug === learnerUser.tenantId.slug,
     );
 
-    console.log(selectedLearner);
     const selectedCourseDetail = useMemo(() => {
         return AdminCourse.find((course) => course._id === selectedCourse);
     }, [selectedCourse, AdminCourse])
