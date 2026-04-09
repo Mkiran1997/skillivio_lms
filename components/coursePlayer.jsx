@@ -105,6 +105,9 @@ function CoursePlayer({ ...props }) {
     }
     var cur = lessons[activeLesson] || lessons[0];
 
+    const course= typeof activeCourse.courseId === "object"
+            ? activeCourse.courseId
+            : activeCourse
 
     // Course materials list (simulated — in production fetched from API)
     var MATERIALS = [
@@ -183,7 +186,7 @@ function CoursePlayer({ ...props }) {
 
     var canProgress = introAccepted && instructionsAck;
 
-    var checkCompleted = lessonStatus.find((ls) => activeCourse.courseId.modules.some((a) => a.lessons.some((l) => l._id === ls.lessonId._id)))?.lessonId?._id || 0;
+    var checkCompleted =( typeof activeCourse.courseId==="object") && lessonStatus.find((ls) => activeCourse.courseId.modules.some((a) => a.lessons.some((l) => l._id === ls.lessonId._id)))?.lessonId?._id  || 0;
 
     // If learner hasn't accepted yet, redirect from lessons tab
     function handleLessonTabClick() {
@@ -530,12 +533,12 @@ function CoursePlayer({ ...props }) {
                                             margin: 0,
                                         }}
                                     >
-                                        {activeCourse && activeCourse.courseId.title}
+                                        {activeCourse && course.title}
                                     </h1>
                                     <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
-                                        NQF Level {activeCourse && activeCourse.courseId.nqf} ·{" "}
-                                        {(activeCourse && activeCourse.courseId.credits) || 10} Credits ·{" "}
-                                        {activeCourse && activeCourse.courseId.cat}
+                                        NQF Level {activeCourse && course.nqf} ·{" "}
+                                        {(activeCourse && course.credits) || 10} Credits ·{" "}
+                                        {activeCourse && course.cat}
                                     </div>
                                 </div>
                             </div>
@@ -567,7 +570,7 @@ function CoursePlayer({ ...props }) {
                                         margin: 0,
                                     }}
                                 >
-                                    {(activeCourse && activeCourse.courseId.desc) ||
+                                    {(activeCourse && course.desc) ||
                                         "This qualification is designed to develop the knowledge, skills, and applied competence required by South African industry. It is aligned to the National Qualifications Framework and registered with SAQA."}
                                 </p>
                             </div>
@@ -584,18 +587,18 @@ function CoursePlayer({ ...props }) {
                                     [
                                         "🎓",
                                         "Qualification",
-                                        "NQF Level " + ((activeCourse && activeCourse.courseId.nqf) || 4),
+                                        "NQF Level " + ((activeCourse && course.nqf) || 4),
                                     ],
                                     [
                                         "📊",
                                         "Total Credits",
-                                        ((activeCourse && activeCourse.courseId.credits) || 10) +
+                                        ((activeCourse && course.credits) || 10) +
                                         " NQF Credits",
                                     ],
                                     [
                                         "⏱",
                                         "Estimated Duration",
-                                        ((activeCourse && activeCourse.courseId.lessons) || 8) +
+                                        ((activeCourse && course.lessons) || 8) +
                                         " lessons · Self-paced",
                                     ],
                                     ["🏆", "Assessment", "Final assessment + PoE required"],
