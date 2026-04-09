@@ -9,6 +9,7 @@ import bankdetailReducer from "./slices/bankDetailSlice";
 import tenantReducer from "./slices/tenantSlice";
 import enrollmentReducer from "./slices/enrollmentSlice";
 import userReducer from "./slices/authSlice";
+import lessonStatusReducer from "./slices/lessonStatusSlice";
 
 export const makeStore = () => {
   const store = configureStore({
@@ -21,6 +22,7 @@ export const makeStore = () => {
       tenants:tenantReducer,
       enrollment:enrollmentReducer,
       user:userReducer,
+      lessonStatus:lessonStatusReducer,
       [apiSlice.reducerPath]: apiSlice.reducer,
     },
     middleware: (getDefaultMiddleware) =>

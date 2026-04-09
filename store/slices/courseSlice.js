@@ -26,7 +26,6 @@ export const fetchCourses = createAsyncThunk(
 export const createCourses = createAsyncThunk(
   "course/createCourse",
   async (courseData, { rejectWithValue }) => {
-    console.log(courseData);
     try {
       const response = await fetch(API_URL, {
         method: "POST",
@@ -51,7 +50,6 @@ export const createCourses = createAsyncThunk(
 export const updateCourse = createAsyncThunk(
   "courses/updateCourse",
   async ({ id, updatedData }, { rejectWithValue }) => {
-    console.log(updatedData);
     try {
       const response = await fetch(`/api/courses/${id}`, {
         method: "PUT",
@@ -141,15 +139,69 @@ const courseSlice = createSlice({
       })
       .addCase(updateCourse.fulfilled, (state, action) => {
         state.loading = false;
-        // Match the course by its ID and update it in the state
         const updatedCourse = action.payload;
+
         const index = state.Course.findIndex(
           (course) => course._id === updatedCourse._id,
         );
+
         if (index !== -1) {
-          state.Course[index] = updatedCourse;
+          // 1. Update the top-level course data
+          // We use spread to keep existing data and overwrite with incoming changes
+          state.Course[index] = { ...state.Course[index], ...updatedCourse };
+
+          // 2. Handle Modules
+          // Check if updatedCourse.modules exists and if it's an array of objects or IDs
+          updatedCourse.modules?.forEach((updatedModule) => {
+            // If updatedModule is just a string (ID), we find the module in state by that ID
+            const moduleId =
+              typeof updatedModule === "string"
+                ? updatedModule
+                : updatedModule._id;
+
+            const moduleIndex = state.Course[index].modules.findIndex(
+              (m) => m._id === moduleId,
+            );
+
+            if (moduleIndex !== -1) {
+              // If it's an object, update the module data
+              if (typeof updatedModule === "object") {
+                state.Course[index].modules[moduleIndex] = {
+                  ...state.Course[index].modules[moduleIndex],
+                  ...updatedModule,
+                };
+
+                // 3. Handle Lessons (Only if updatedModule is an object containing lessons)
+                updatedModule.lessons?.forEach((updatedLesson) => {
+                  // Determine the ID whether the payload is an object or a string
+                  const lessonId =
+                    typeof updatedLesson === "string"
+                      ? updatedLesson
+                      : updatedLesson._id;
+
+                  const lessonIndex = state.Course[index].modules[
+                    moduleIndex
+                  ].lessons.findIndex((l) => l._id === lessonId);
+
+                  if (lessonIndex !== -1) {
+                    // ONLY update if we actually have new data (an object)
+                    // If it's just a string ID, we keep the existing lesson object as is
+                    if (typeof updatedLesson === "object") {
+                      state.Course[index].modules[moduleIndex].lessons[
+                        lessonIndex
+                      ] = {
+                        ...state.Course[index].modules[moduleIndex].lessons[
+                          lessonIndex
+                        ],
+                        ...updatedLesson,
+                      };
+                    }
+                  }
+                });
+              }
+            }
+          });
         } else {
-          // Optional: Push the new course if not found (unlikely, but possible)
           state.Course.push(updatedCourse);
         }
       })

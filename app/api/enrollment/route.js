@@ -8,7 +8,17 @@ export async function GET() {
         await dbConnect();
         const enrollments = await enrollment.find()
             .populate("learnerId")
-            .populate("courseId");
+            .populate({
+                path: "courseId",
+                populate: {
+                    path: "modules",
+                    model: "module", // Use the string name from your model export
+                    populate: {
+                        path: "lessons",
+                        model: "lesson" // Use the string name from your model export
+                    }
+                }
+            });
         const mapped = enrollments.map(c => ({ ...c.toObject(), id: c._id.toString() }));
         return NextResponse.json(mapped);
     } catch (err) {

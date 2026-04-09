@@ -1,5 +1,6 @@
 // app/api/courses/[id]/route.js
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import dbConnect from "@/lib/mongoose";
 import Course from "@/app/api/model/course";
 import Module from "@/app/api/model/module";
@@ -9,7 +10,10 @@ export async function GET(req, { params }) {
   try {
     await dbConnect();
     const paramsRes = await params;
-    const course = await Course.findById(paramsRes.id);
+    const course = await Course.findById(paramsRes.id).populate({
+      path: "modules",
+      populate: { path: "lessons" }, // This will also populate lessons inside each module
+    });
     if (!course)
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     return NextResponse.json({
@@ -20,93 +24,117 @@ export async function GET(req, { params }) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
 export async function PUT(req, { params }) {
   try {
     await dbConnect();
-    const paramsRes = await params;
-    console.log(params);
-    // const { id } = params; // Extract course ID
-    const data = await req.json(); // Extract updated course data
+    const { id: courseId } = await params;
+    const data = await req.json();
 
-    // Step 1: Update the course
+    // 1. Update the Course
     const course = await Course.findByIdAndUpdate(
-      paramsRes.id,
+      courseId,
       {
-        name: data.name,
-        category: data.category,
+        title: data.title,
+        cat: data.cat,
         level: data.level,
-        nqfLevel: data.nqfLevel,
-        saqaQualificationId: data.saqaQualificationId,
-        accreditingBody: data.accreditingBody,
+        nqf: data.nqf,
+        credits: data.credits,
+        price: data.price,
+        free: data.free,
+        saqaId: data.saqaId,
+        setaAffiliation: data.setaAffiliation,
         passingScore: data.passingScore,
-        description: data.description,
+        desc: data.desc,
+        type: data.type,
+        dripEnabled: data.dripEnabled,
+        status: data.status,
+        thumb: data.thumb,
+        issueCertificate: data.issueCertificate,
       },
-      { new: true },
+      { returnDocument: "after" }, // Updated for deprecation
     );
 
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    // Step 2: Update Modules and Lessons if provided
+    // 2. Upsert Modules
     const updatedModules = await Promise.all(
-      data.modules.map(async (moduleData) => {
-        console.log(moduleData);
-        // Update the module
-        const updatedModule = await Module.findByIdAndUpdate(
-          moduleData._id,
+      (data.modules || []).map(async (moduleData) => {
+        // If no ID exists, create a new one for the upsert
+        const moduleId = moduleData._id || new mongoose.Types.ObjectId();
+
+        const updatedModule = await Module.findOneAndUpdate(
+          { _id: moduleId },
           {
             moduleName: moduleData.moduleName,
+            courseId: courseId,
           },
-          { new: true },
+          {
+            upsert: true,
+            returnDocument: "after", // Updated for deprecation
+            setDefaultsOnInsert: true,
+          },
         );
 
-        if (!updatedModule) {
-          throw new Error(`Module with ID ${moduleData._id} not found`);
-        }
-
-        // Update Lessons for this module
+        // 3. Upsert Lessons
         const updatedLessons = await Promise.all(
-          moduleData.lessons.map(async (lessonData) => {
-            const updatedLesson = await Lesson.findByIdAndUpdate(
-              lessonData._id,
+          (moduleData.lessons || []).map(async (lessonData) => {
+            const isObject = typeof lessonData === "object";
+
+
+            // Generate ID if missing to allow Creation
+            const lessonId = isObject
+              ? lessonData._id || new mongoose.Types.ObjectId()
+              : lessonData;
+
+            if (!isObject) {
+              return await Lesson.findById(lessonId);
+            }
+
+            return await Lesson.findOneAndUpdate(
+              { _id: lessonId },
               {
                 title: lessonData.title,
                 type: lessonData.type,
-                description: lessonData.description,
-                url: lessonData.url || "", // Default to an empty string if no URL is provided
+                desc: lessonData.desc,
+                url: lessonData.url || "",
+                moduleId: updatedModule._id,
               },
-              { new: true },
+              {
+                upsert: true,
+                returnDocument: "after", // Updated for deprecation
+                setDefaultsOnInsert: true,
+              },
             );
-
-            if (!updatedLesson) {
-              throw new Error(`Lesson with ID ${lessonData._id} not found`);
-            }
-
-            return updatedLesson;
           }),
         );
 
-        updatedModule.lessons = updatedLessons.map((lesson) => lesson._id);
+        // Sync and Save
+        updatedModule.lessons = updatedLessons.map((l) => l._id);
         await updatedModule.save();
 
-        return updatedModule;
+        const moduleWithLessons = updatedModule.toObject();
+        moduleWithLessons.lessons = updatedLessons;
+        return moduleWithLessons;
       }),
     );
 
-    // Step 3: Update the course with the updated module IDs
-    course.modules = updatedModules.map((module) => module._id);
+    // 4. Update Course with final module list
+    course.modules = updatedModules.map((m) => m._id);
     await course.save();
 
     return NextResponse.json({
       ...course.toObject(),
+      modules: updatedModules,
       id: course._id.toString(),
     });
   } catch (err) {
+    console.error("Error in PUT request:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
 export async function DELETE(req, { params }) {
   try {
     await dbConnect();
