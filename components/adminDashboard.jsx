@@ -65,6 +65,7 @@ function AdminDashboard({ ...props }) {
   const firstInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const [selectedLessonType, setSelectedLessonType] = useState("VIDEO");
+  console.log(setSelectedLessonType);
 
   const dispatch = useDispatch();
 
@@ -1256,6 +1257,8 @@ function AdminDashboard({ ...props }) {
                                   />
                                   {selectedLessonType === "TEXT" &&
                                   les.type === "TEXT" ? (
+                                      console.log("text selected"),
+
                                     <input
                                       key="text-input"
                                       style={{
@@ -1291,6 +1294,7 @@ function AdminDashboard({ ...props }) {
                                         gap: "4px",
                                       }}
                                     >
+                                      {console.log("video selected")}
                                       {/* 1. The actual file input (no value prop!) */}
                                       <input
                                         key="file-input"
