@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { GLOBAL_CSS } from '../app/globalCss';
 import { TENANTS } from "../app/mockData";
 import Toast from './toast';
@@ -8,6 +9,7 @@ function LandingPage({ ...props }) {
     const { p, s, tenant, setView, currentTenant, setCurrentTenant, notification, css } = props;
 
 
+
     return (
         <div style={{ minHeight: "100vh", background: s, fontFamily: "'Segoe UI',system-ui,sans-serif" }}>
             <Toast notification={notification} />
@@ -16,7 +18,7 @@ function LandingPage({ ...props }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {
                         currentTenant === "skillivio" ?
-                            <img src='/logo/skillivioLogo.jpeg' alt='skillivio' style={{ width: 38, height: 38, objectFit: "contain",borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
+                            <img src='/logo/skillivioLogo.jpeg' alt='skillivio' style={{ width: 38, height: 38, objectFit: "contain", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
                             : <div style={{ width: 38, height: 38, background: p, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }}>{tenant.logo}</div>
 
                     }                    <div>
@@ -39,11 +41,47 @@ function LandingPage({ ...props }) {
                     <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 17, lineHeight: 1.7, maxWidth: 500, margin: "0 0 36px" }}>A fully managed LMS delivered under your brand — configured for QCTO compliance from day one. Learner analytics, assessments, PoE and SETA exports included.</p>
                     <div style={{ display: "flex", gap: 14 }}>
                         <button onClick={function () { setView("login"); }} style={{ ...css.btn(p), padding: "14px 28px", fontSize: 16 }}>Launch Platform →</button>
+                        <button onClick={function () { setView("contact"); }} style={{ ...css.btn(p), padding: "14px 28px", fontSize: 16 }}>Contact Us →</button>
                     </div>
                     <div style={{ display: "flex", gap: 32, marginTop: 48 }}>
                         {[["500+", "SDPs Trust Us"], ["50K+", "Learners Served"], ["QCTO", "Aligned"]].map(function (pair) {
                             return <div key={pair[1]}><div style={{ fontSize: 22, fontWeight: 900, color: p }}>{pair[0]}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{pair[1]}</div></div>;
                         })}
+                    </div>
+                    <div style={{ marginTop: 40, display: "flex", flexDirection: "row", gap: 16 }}>
+                        <div style={{ color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 12, textTransform: "uppercase", letterSpacing: "1px", paddingTop: 15 }}>
+                            Connect with us
+                        </div>
+                        <div style={{ display: "flex", gap: 12 }}>
+                            {[
+                                { icon: "fab fa-facebook-f", url: "https://skillivio.netlify.app/" },
+                                { icon: "fab fa-linkedin-in", url: "https://www.linkedin.com/company/skillivio/" },
+                                { icon: "fab fa-instagram", url: "https://www.instagram.com/skillivio_?igsh=bWlkcG5oODByZXdx&wa_status_inline=true" }
+                            ].map((social, index) => (
+                                <a key={index}
+                                    href={social.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="social-icon-button"
+                                    style={{
+                                        width: 42,
+                                        height: 42,
+                                        borderRadius: 10,
+                                        background: "rgba(255,255,255,0.05)",
+                                        border: `1px solid ${p}`,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: p,
+                                        fontSize: 18,
+                                        textDecoration: "none",
+                                        transition: "all 0.3s ease",
+                                    }}
+                                >
+                                    <i className={social.icon}></i>
+                                </a>
+                            ))}
+                        </div>
                     </div>
                 </div>
                 <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -65,6 +103,11 @@ function LandingPage({ ...props }) {
                     })}
                 </div>
             </div>
+
+
+
+
+
             <div style={{ padding: "48px", background: "rgba(0,0,0,0.2)", textAlign: "center" }}>
                 <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>© 2026 Skillivio Digital Learning Solutions • QCTO-Aligned • BBBEE Compliant • 🇿🇦 Proudly South African</div>
             </div>

@@ -1,10 +1,7 @@
 import Toast from "./toast";
 
 function AdminSidebar({ ...props }) {
-  // var tab = props.tab, setTab = props.setTab, items = props.items, tenant = props.tenant,
-  //   currentUser = props.currentUser, userRole = props.userRole,
-  //   currentTenant = props.currentTenant, logout = props.logout,
-  //   p = props.p, s = props.s, css = props.css, notification = props.notification;
+ 
 
   const { tab, setTab, items, tenant, currentUser, userRole, currentTenant, logout, p, s, css, notification } = props;
   return (
