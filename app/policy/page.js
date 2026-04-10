@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import PrivacyContent from "@/components/privacyPolicyPage";
 import { TENANTS } from "../mockData";
 import ContactUsPage from "@/components/contactUsPage";
@@ -23,5 +23,7 @@ export default function Page() {
     };
 
 
-    return <PrivacyContent {...props} />;
+    return <Suspense fallback={<div>Loading...</div>}>
+        <PrivacyContent {...props} />
+    </Suspense>;
 }
