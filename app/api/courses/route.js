@@ -23,30 +23,32 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  await dbConnect(); 
+  await dbConnect();
 
   try {
     const data = await req.json();
 
+    // Create a course
     const course = await Course.create({
       title: data.title,
       cat: data.cat,
       level: data.level,
       nqf: data.nqf,
-      credits:data.credits,
-      price:data.price,
-      free:data.free,
+      credits: data.credits,
+      price: data.price,
+      free: data.free,
       saqaId: data.saqaId,
       setaAffiliation: data.setaAffiliation,
       passingScore: data.passingScore,
       desc: data.desc,
       type: data.type,
-      dripEnabled:data.dripEnabled,
-      status:data.status,
-      thumb:data.thumb,
-      issueCertificate:data.issueCertificate
+      dripEnabled: data.dripEnabled,
+      status: data.status,
+      thumb: data.thumb,
+      issueCertificate: data.issueCertificate,
     });
 
+    // Create modules and lessons
     const modules = await Promise.all(
       data.modules.map(async (moduleData) => {
         const module = await Module.create({
@@ -59,8 +61,8 @@ export async function POST(req) {
             const lesson = await Lesson.create({
               title: lessonData.title,
               type: lessonData.type,
-              desc: lessonData.desc,
-              url: lessonData.url || "",
+              desc: lessonData.desc|| "",
+              url: lessonData.url || "",  // Store the uploaded file URL
               moduleId: module._id,
             });
 

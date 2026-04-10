@@ -17,6 +17,8 @@ import {
   updateCourse,
 } from "../store/slices/courseSlice";
 import { useDispatch, useSelector } from "react-redux";
+import ContactUsPage from "./contactUsPage";
+import TermsAndConditions from "./termsConditionPage";
 
 function App() {
   const { Course, loading, error } = useSelector((state) => state.course);
@@ -32,6 +34,34 @@ function App() {
   // Course builder state — lives here to avoid remount loss
   var [courseBuilderOpen, setCourseBuilderOpen] = useState(false);
   var [editingCourse, setEditingCourse] = useState(null); // null = create mode, course obj = edit mode
+  const [selectConditionAndPolicy, setSelectConditionAndPolicy] = useState("");
+   const [isClient, setIsClient] = useState(false);
+  // const getStoreView = localStorage?.getItem("view") || '';
+  // var getStoreView;
+
+  //  useEffect(() => {
+  //   setIsClient(true); // Once the component is mounted, we are in the client
+  // }, []);
+
+  //   useEffect(() => {
+  //   if (isClient) {
+  //      getStoreView = localStorage?.getItem('view');
+     
+  //   }
+  // }, [isClient]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Now we know we're in the browser
+      const storedView = localStorage.getItem('view') || ''; // Get stored view
+      if (storedView.length > 0) {
+        setView(storedView); // Set view state
+        localStorage.removeItem('view')
+      }
+      setIsClient(true); // Mark as client
+    }
+  }, []);
+
   var [newCourse, setNewCourse] = useState({
     title: "",
     cat: "Technology",
@@ -93,6 +123,7 @@ function App() {
     setAssessSubmitted(false);
     setView("course");
   }
+
   function publishCourse(id, currentStatus) {
     // Determine new status
     const newStatus = currentStatus === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
@@ -126,6 +157,13 @@ function App() {
     passingScore: 75,
     dripEnabled: false,
   };
+
+  // useEffect(() => {
+  //   if (getStoreView?.length > 0) {
+  //     setView(getStoreView);
+  //     localStorage.removeItem("view");
+  //   }
+  // }, [getStoreView])
 
   function openCourseEditor(course) {
     if (course) {
@@ -170,7 +208,7 @@ function App() {
               title: "Welcome & Overview",
               type: "VIDEO",
               desc: "",
-              url:"",
+              url: "",
             },
           ],
         },
@@ -220,7 +258,6 @@ function App() {
       }
     }
 
-    
     // Construct courseData with the full module object
     const courseData = {
       title: title,
@@ -246,7 +283,6 @@ function App() {
             : "skillivio",
     };
 
-
     try {
       if (editingCourse) {
         // Update existing course
@@ -270,6 +306,8 @@ function App() {
       notify("Error saving course: " + error.message, "error");
     }
   }
+
+
 
   // Keep legacy name for backward compat
   function createCourse() {
@@ -425,11 +463,18 @@ function App() {
     logout: logout,
     setView: setView,
   };
-
   if (view === "landing")
     return (
       <LandingPage {...sharedPortalProps} setCurrentTenant={setCurrentTenant} />
     );
+
+  if (view === "contact")
+    return <ContactUsPage {...sharedPortalProps} p={p} s={s} tenant={tenant} setSelectConditionAndPolicy={setSelectConditionAndPolicy}
+  view={view}
+  currentTenant={currentTenant}
+      onBack={function () { setView("landing"); }} />;
+
+
 
   if (view === "login")
     return (
@@ -494,6 +539,7 @@ function App() {
   if (view === "course" && activeCourse)
     return (
       <CoursePlayer
+        currentUser={currentUser}
         {...sharedPortalProps}
         activeCourse={activeCourse}
         activeLesson={activeLesson}

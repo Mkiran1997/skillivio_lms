@@ -10,6 +10,9 @@ import tenantReducer from "./slices/tenantSlice";
 import enrollmentReducer from "./slices/enrollmentSlice";
 import userReducer from "./slices/authSlice";
 import lessonStatusReducer from "./slices/lessonStatusSlice";
+import uploadReducer from './slices/uploadSlice';
+import contactusReducer from "./slices/contactUsSlice";
+
 
 export const makeStore = () => {
   const store = configureStore({
@@ -23,6 +26,8 @@ export const makeStore = () => {
       enrollment:enrollmentReducer,
       user:userReducer,
       lessonStatus:lessonStatusReducer,
+      upload:uploadReducer,
+      contactUs:contactusReducer,
       [apiSlice.reducerPath]: apiSlice.reducer,
     },
     middleware: (getDefaultMiddleware) =>

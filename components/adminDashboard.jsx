@@ -16,6 +16,7 @@ import {
 import * as XLSX from "xlsx";
 import { fetchEnrollment } from "@/store/slices/enrollmentSlice";
 import EnrolmentForm from "./enrolmentForm";
+import { fetchcontactUs } from "@/store/slices/contactUsSlice";
 // import StatCard from "./StatCard";
 // import PaginationBar from "./PaginationBar";
 // import ToggleSwitch from "./ToggleSwitch";
@@ -59,15 +60,22 @@ function AdminDashboard({ ...props }) {
   const { Learners } = useSelector((state) => state.learners);
   const { bankdetails } = useSelector((state) => state.bankdetail);
   const { Enrollment } = useSelector((state) => state.enrollment);
+  const { lessonStatus } = useSelector((state) => state.lessonStatus);
+  const { contactUs } = useSelector((state) => state.contactUs);
+
   const [isEditing, setIsEditing] = useState(false);
   const [localBankDetails, setLocalBankDetails] = useState({});
   const [openEnrolmentForm, setOpenEnrolmentForm] = useState(false);
   const firstInputRef = useRef(null);
   const fileInputRef = useRef(null);
-  const [selectedLessonType, setSelectedLessonType] = useState("VIDEO");
-  console.log(setSelectedLessonType);
+  const [selectedLessonType, setSelectedLessonType] = useState("TEXT");
+  var [activeLearner, setActiveLearner] = useState(null);
 
   const dispatch = useDispatch();
+
+  function openModule(learner) {
+    setActiveLearner(learner);
+  }
 
   var [tab, setTab] = useState("dashboard");
   var tenantLimit =
@@ -97,6 +105,8 @@ function AdminDashboard({ ...props }) {
 
   var limitedCourses = AdminCourse.slice(0, tenantLimit);
   var coursesPag = usePagination(limitedCourses, 5);
+  const AdminContact = contactUs.filter((c) => c?.type === currentUser?.tenantId?.slug)
+  var contactPag = usePagination(AdminContact, 5)
 
   var [cohorts, setCohorts] = useState([
     {
@@ -187,6 +197,7 @@ function AdminDashboard({ ...props }) {
     { id: "payments", icon: "💳", label: "Payments" },
     { id: "certificates", icon: "🏆", label: "Certificates" },
     { id: "settings", icon: "⚙️", label: "Settings" },
+    { id: "contact", icon: "👤", label: "Contact" },
   ];
 
   const bankDetailsArray = [
@@ -203,6 +214,7 @@ function AdminDashboard({ ...props }) {
     dispatch(fetchlearners());
     dispatch(fetchbankdetails());
     dispatch(fetchEnrollment());
+    dispatch(fetchcontactUs());
   }, [dispatch]);
 
   useEffect(() => {
@@ -474,6 +486,11 @@ function AdminDashboard({ ...props }) {
     link.download = "learners.csv"; // File name for download
     link.click(); // Trigger the download
   };
+
+  const LearnerCourse = activeLearner && Enrollment.filter(
+    (l) => l.learnerId._id === activeLearner._id,
+  );
+
   return (
     <div style={{ display: "flex", ...css.page }}>
       <style>{GLOBAL_CSS}</style>
@@ -1256,36 +1273,37 @@ function AdminDashboard({ ...props }) {
                                     placeholder="Lesson title"
                                   />
                                   {selectedLessonType === "TEXT" &&
-                                  les.type === "TEXT" ? (
-                                      console.log("text selected"),
-
-                                    <input
-                                      key="text-input"
-                                      style={{
-                                        ...css.input,
-                                        padding: "5px 10px",
-                                        fontSize: 11,
-                                        color: "#64748b",
-                                      }}
-                                      value={les.desc || ""}
-                                      onChange={function (e) {
-                                        var v = e.target.value;
-                                        setCourseModules(function (ms) {
-                                          return ms.map(function (m, i) {
-                                            if (i !== mi) return m;
-                                            var newL = m.lessons.map(
-                                              function (l, j) {
-                                                return j === li
-                                                  ? { ...l, desc: v }
-                                                  : l;
-                                              },
-                                            );
-                                            return { ...m, lessons: newL };
-                                          });
-                                        });
-                                      }}
-                                      placeholder="Brief description (optional)"
-                                    />
+                                    les.type === "TEXT" ? (
+                                    (console.log("text selected"),
+                                      (
+                                        <input
+                                          key="text-input"
+                                          style={{
+                                            ...css.input,
+                                            padding: "5px 10px",
+                                            fontSize: 11,
+                                            color: "#64748b",
+                                          }}
+                                          value={les.desc || ""}
+                                          onChange={function (e) {
+                                            var v = e.target.value;
+                                            setCourseModules(function (ms) {
+                                              return ms.map(function (m, i) {
+                                                if (i !== mi) return m;
+                                                var newL = m.lessons.map(
+                                                  function (l, j) {
+                                                    return j === li
+                                                      ? { ...l, desc: v }
+                                                      : l;
+                                                  },
+                                                );
+                                                return { ...m, lessons: newL };
+                                              });
+                                            });
+                                          }}
+                                          placeholder="Brief description (optional)"
+                                        />
+                                      ))
                                   ) : (
                                     <div
                                       style={{
@@ -1294,7 +1312,6 @@ function AdminDashboard({ ...props }) {
                                         gap: "4px",
                                       }}
                                     >
-                                      {console.log("video selected")}
                                       {/* 1. The actual file input (no value prop!) */}
                                       <input
                                         key="file-input"
@@ -1322,11 +1339,11 @@ function AdminDashboard({ ...props }) {
                                                   function (l, j) {
                                                     return j === li
                                                       ? {
-                                                          ...l,
-                                                          file: file,
-                                                          tempName: file.name,
-                                                          url: previewUrl, // Set the preview URL here
-                                                        }
+                                                        ...l,
+                                                        file: file,
+                                                        tempName: file.name,
+                                                        url: previewUrl, // Set the preview URL here
+                                                      }
                                                       : l;
                                                   },
                                                 ),
@@ -1381,10 +1398,10 @@ function AdminDashboard({ ...props }) {
                                     padding: "7px 8px",
                                     fontSize: 11,
                                   }}
-                                  value={les.type || "VIDEO"}
+                                  value={les.type}
                                   onChange={function (e) {
                                     var v = e.target.value;
-                                    setSelectedLessonType(e.target.value);
+                                    setSelectedLessonType(v);
                                     setCourseModules(function (ms) {
                                       return ms.map(function (m, i) {
                                         if (i !== mi) return m;
@@ -1460,11 +1477,11 @@ function AdminDashboard({ ...props }) {
                                 return ms.map(function (m, i) {
                                   return i === mi
                                     ? {
-                                        ...m,
-                                        lessons: (m.lessons || []).concat([
-                                          newLes,
-                                        ]),
-                                      }
+                                      ...m,
+                                      lessons: (m.lessons || []).concat([
+                                        newLes,
+                                      ]),
+                                    }
                                     : m;
                                 });
                               });
@@ -1991,11 +2008,11 @@ function AdminDashboard({ ...props }) {
               <button
                 onClick={function () {
                   (currentTenant === "acme" && limitedCourses.length === 5) ||
-                  (currentTenant === "techpro" && limitedCourses.length === 10)
+                    (currentTenant === "techpro" && limitedCourses.length === 10)
                     ? notify(
-                        "Please delete the existing course before adding a new one.",
-                        "error",
-                      )
+                      "Please delete the existing course before adding a new one.",
+                      "error",
+                    )
                     : openCourseEditor(null);
                 }}
                 style={css.btn(p)}
@@ -2186,12 +2203,12 @@ function AdminDashboard({ ...props }) {
                 >
                   ⬆ Export Learners
                 </button>
-                <button
+                {/* <button
                   // onClick={() => downloadCSV(LearnerCourseWise)}
                   style={css.btn(p)}
                 >
                   ⬇ Import Learners
-                </button>
+                </button> */}
               </div>
             </div>
             <div style={css.card}>
@@ -2346,7 +2363,9 @@ function AdminDashboard({ ...props }) {
                         <td style={{ padding: "12px" }}>
                           <button
                             onClick={function () {
-                              notify("Viewing " + l.name + "'s profile");
+                              openModule(l);
+                              setTab("module");
+                              notify("Viewing " + l.userId.name + "'s profile");
                             }}
                             style={css.btn(p, "#fff", true)}
                           >
@@ -2360,6 +2379,215 @@ function AdminDashboard({ ...props }) {
               </table>
               <PaginationBar {...learnersPag} perPage={6} color={p} />
             </div>
+            { }
+          </div>
+        )}
+
+        {activeLearner && tab === "module" && (
+          <div className="fade">
+            <h1 style={{ ...css.h1, marginBottom: 24 }}>Learner Courses</h1>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2,1fr)",
+                gap: 16,
+              }}
+            >
+              {LearnerCourse?.map(function (c) {
+                const courseStats = lessonStatus.reduce((acc, status) => {
+                  const enrollment = status.enrollId;
+                  const learner = enrollment?.learnerId;
+                  const course = enrollment?.courseId;
+
+                  // 1. Filter for the current user
+                  if (enrollment._id === c._id) {
+                    const courseId =
+                      course?._id?.toString() || "Unknown Course";
+
+                    if (!acc[courseId]) {
+                      // 2. Calculate the "Master Total" of lessons from the Course Schema
+                      // This is the total number of lessons that exist in the course
+                      const totalPossibleLessons =
+                        course?.modules?.flatMap((module) =>
+                          module.lessons.map((l) => l._id),
+                        ).length || 0;
+
+                      acc[courseId] = {
+                        courseName: course?.title || "Untitled",
+                        totalLessonsInCourse: totalPossibleLessons,
+                        lessonsStartedOrFinished: 0,
+                        progressPercentage: 0,
+                      };
+                    }
+
+                    // 3. Increment lessons that have a record in lessonStatus
+                    acc[courseId].lessonsStartedOrFinished += 1;
+
+                    // 4. Calculate the percentage
+                    const { lessonsStartedOrFinished, totalLessonsInCourse } =
+                      acc[courseId];
+                    acc[courseId].progressPercentage =
+                      totalLessonsInCourse > 0
+                        ? Math.round(
+                          (lessonsStartedOrFinished / totalLessonsInCourse) *
+                          100,
+                        )
+                        : 0;
+                  }
+                  return acc;
+                }, {});
+
+                const finalProgress = Object.values(courseStats);
+                console.log(finalProgress);
+                return (
+                  <div
+                    key={c._id}
+                    style={{ ...css.card, display: "flex", gap: 14 }}
+                  >
+                    <div
+                      style={{
+                        width: 52,
+                        height: 52,
+                        background: p + "18",
+                        borderRadius: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 26,
+                      }}
+                    >
+                      {c?.courseId.thumb}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 14,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {c?.courseId.title}
+                      </div>
+                      {finalProgress.map(
+                        (f) =>
+                          f.courseName === c.courseId.title && (
+                            <div key={f.courseName}>
+                              <div
+                                style={{
+                                  height: 6,
+                                  background: "#f1f5f9",
+                                  borderRadius: 3,
+                                  margin: "6px 0",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {/* Change 'background: p' to a color string */}
+                                <div
+                                  style={{
+                                    height: "100%",
+                                    width: f.progressPercentage + "%",
+                                    background: p, // Use a hex code or color name here
+                                    borderRadius: 3,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ),
+                      )}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        {finalProgress.map(
+                          (f) =>
+                            f.courseName === c.courseId.title && (
+                              <div key={f.courseName}>
+                                <span
+                                  style={{ fontSize: 11, color: "#94a3b8" }}
+                                >
+                                  {f.progressPercentage}%
+                                </span>
+                              </div>
+                            ),
+                        )}
+                        <div style={{ display: "flex", gap: 5 }}>
+                          <div style={{ display: "flex", gap: 5 }}>
+                            <input
+                              type="file"
+                              accept=".txt,.pdf"
+                              style={{ display: "none" }}
+                              id={`fileUpload-${c?.id}`} // unique ID per course
+                              onChange={(e) => handleFileUpload(e, c?.id)} // pass course ID
+                            />
+                            <div
+                              style={{
+                                backgroundColor: "#007BFF",
+                                color: "#fff",
+                                padding: "10px",
+                                border: "none",
+                                borderRadius: "4px",
+                              }}
+                            >
+                              Practical
+                            </div>
+                            {/* {uploadedFilesByCourse[c?.id]?.length > 0 && (
+                              <div>
+                                <ul>
+                                  {uploadedFilesByCourse[c?.id].map(
+                                    (file, index) => (
+                                      <li key={index} style={{ marginTop: 5 }}>
+                                        <button
+                                          onClick={() => openFile(file)}
+                                          style={{
+                                            marginLeft: 10,
+                                            padding: "2px 5px",
+                                            backgroundColor: "#4CAF50",
+                                            color: "#fff",
+                                            border: "none",
+                                            borderRadius: 3,
+                                          }}
+                                        >
+                                          Open
+                                        </button>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
+                            )} */}
+                          </div>
+
+                          {c?.progress === 100 ? (
+                            <span
+                              style={{
+                                ...css.tag("#10B981"),
+                                fontSize: 10,
+                                paddingTop: 10,
+                              }}
+                            >
+                              Completed
+                            </span>
+                          ) : (
+                            <button
+                              onClick={function () {
+                                openCourse(c);
+                              }}
+                              style={css.btn(p, "#fff", true)}
+                            >
+                              Continue
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* <PaginationBar {...myCourPag} perPage={4} color={p} /> */}
           </div>
         )}
 
@@ -3454,6 +3682,142 @@ function AdminDashboard({ ...props }) {
             </div>
           </div>
         )}
+
+        {tab === "contact" && (
+          <div className="fade">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 24,
+              }}
+            >
+              <h1 style={css.h1}>Contact</h1>
+            </div>
+            <div style={css.card}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
+                    {[
+                      "Name",
+                      "Company",
+                      "Industry",
+                      "noOfLMS",
+                      "Country",
+                      "Job Title",
+                      "Phone Number",
+                    ].map(function (h) {
+                      return (
+                        <th
+                          key={h}
+                          style={{
+                            textAlign: "left",
+                            padding: "8px 12px",
+                            fontSize: 12,
+                            color: "#64748b",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {h}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {contactPag.slice.map(function (c) {
+                    return (
+                      <tr
+                        key={c.id}
+                        style={{ borderBottom: "1px solid #f8fafc" }}
+                      >
+                        <td style={{ padding: "12px" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                            }}
+                          >
+                            <span style={{ fontSize: 20 }}>{c.thumb}</span>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 13 }}>
+                                {c?.firstName} {c?.lastName}
+                              </div>
+                              <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                                {c?.businessEmail}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            fontSize: 13,
+                            color: "#475569",
+                          }}
+                        >
+                          {c?.company}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            fontSize: 13,
+                            color: "#475569",
+                          }}
+                        >
+                          {c?.industry}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            fontSize: 13,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {c?.noOfLMs}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            fontSize: 13,
+                            color: "#475569",
+                          }}
+                        >
+                          {c?.country}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            fontSize: 13,
+                            color: "#475569",
+                          }}
+                        >
+                          {c?.jobTitle}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            fontSize: 13,
+                            color: "#475569",
+                          }}
+                        >
+                          {c?.phoneNumber}
+                        </td>
+
+
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <PaginationBar {...contactPag} perPage={5} color={p} />
+            </div>
+          </div>
+        )}
+
+
       </div>
       {openEnrolmentForm && (
         <EnrolmentForm

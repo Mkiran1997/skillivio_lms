@@ -28,6 +28,7 @@ function CoursePlayer({ ...props }) {
         activeLesson,
         setActiveLesson,
         setAssessSubmitted,
+        currentUser
     } = props;
     const { lessonStatus } = useSelector((state) => state.lessonStatus);
 
@@ -186,7 +187,7 @@ function CoursePlayer({ ...props }) {
 
     var canProgress = introAccepted && instructionsAck;
 
-    var checkCompleted =( typeof activeCourse.courseId==="object") && lessonStatus.find((ls) => activeCourse.courseId.modules.some((a) => a.lessons.some((l) => l._id === ls.lessonId._id)))?.lessonId?._id  || 0;
+    var checkCompleted =( typeof activeCourse.courseId==="object") && lessonStatus.find((ls) =>   activeCourse.courseId.modules.some((a) => a.lessons.some((l) => l._id === ls.lessonId._id)))?.lessonId?._id  || 0;
 
     // If learner hasn't accepted yet, redirect from lessons tab
     function handleLessonTabClick() {
