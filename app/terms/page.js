@@ -4,21 +4,22 @@ import { TENANTS } from "../mockData";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function Page() {
-
+function TermsPage() {
     const searchParams = useSearchParams();
     const currentTenant = searchParams.get('tenant') || "skillivio";
-
-
-    var tenant = TENANTS[currentTenant];
+    const tenant = TENANTS[currentTenant];
     const props = {
         p: tenant.primary,
         s: tenant.secondary,
         tenant: tenant,
     };
+    return <TermsAndConditions {...props} />;
+}
 
-    return  <Suspense fallback={<div>Loading...</div>}>
-        <TermsAndConditions {...props} />
-    </Suspense>
-
+export default function Page() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <TermsPage />
+        </Suspense>
+    );
 }
