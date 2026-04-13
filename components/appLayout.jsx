@@ -1,54 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { COURSES, TENANTS } from "../app/mockData";
+import { TENANTS } from "../app/mockData";
 import { useTheme } from "../app/utility";
 import LandingPage from "./landingPage";
-import AdminDashboard from "./adminDashboard";
-import AssessmentView from "./assessmentView";
-import LoginPage from "./loginPage";
-import LearnerPortal from "./learnerPortal";
-import SkillivioSuperAdmin from "./skillivioSuperAdmin";
-import CoursePlayer from "./coursePlayer";
-import CertificateView from "./certificateView";
-import {
-  createCourses,
-  fetchCourses,
-  updateCourse,
-} from "../store/slices/courseSlice";
+
 import { useDispatch, useSelector } from "react-redux";
 import ContactUsPage from "./contactUsPage";
-import TermsAndConditions from "./termsConditionPage";
+import { fetchtenants } from "@/store/slices/tenantSlice";
 
 function App() {
-  const { Course, loading, error } = useSelector((state) => state.course);
   var [currentTenant, setCurrentTenant] = useState("skillivio");
   var [view, setView] = useState("landing");
   var [userRole, setUserRole] = useState(null);
   var [currentUser, setCurrentUser] = useState(null);
   var [activeCourse, setActiveCourse] = useState(null);
-  var [activeLesson, setActiveLesson] = useState(0);
-  var [assessSubmitted, setAssessSubmitted] = useState(false);
   var [notification, setNotification] = useState(null);
-  var [courses, setCourses] = useState(COURSES);
-  // Course builder state — lives here to avoid remount loss
-  var [courseBuilderOpen, setCourseBuilderOpen] = useState(false);
-  var [editingCourse, setEditingCourse] = useState(null); // null = create mode, course obj = edit mode
   const [selectConditionAndPolicy, setSelectConditionAndPolicy] = useState("");
-   const [isClient, setIsClient] = useState(false);
-  // const getStoreView = localStorage?.getItem("view") || '';
-  // var getStoreView;
+  const [isClient, setIsClient] = useState(false);
 
-  //  useEffect(() => {
-  //   setIsClient(true); // Once the component is mounted, we are in the client
-  // }, []);
-
-  //   useEffect(() => {
-  //   if (isClient) {
-  //      getStoreView = localStorage?.getItem('view');
-     
-  //   }
-  // }, [isClient]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -62,28 +32,17 @@ function App() {
     }
   }, []);
 
-  var [newCourse, setNewCourse] = useState({
-    title: "",
-    cat: "Technology",
-    level: "BEGINNER",
-    nqf: 4,
-    credits: 10,
-    price: "",
-    free: true,
-    desc: "",
-    thumb: "📘",
-    saqaId: "",
-    passingScore: 75,
-    dripEnabled: false,
-    setaAffiliation: "",
-  });
-  var [courseModules, setCourseModules] = useState([]);
-  var [activeModuleIdx, setActiveModuleIdx] = useState(null);
-  var [uploadingForCourse, setUploadingForCourse] = useState(null);
-  var [courseFiles, setCourseFiles] = useState({}); // { courseId: [{name,type,size,uploaded}] }
+
   const dispatch = useDispatch();
 
-  var tenant = TENANTS[currentTenant];
+  const { tenants } = useSelector(state => state.tenants)
+
+  useEffect(() => {
+    dispatch(fetchtenants())
+  }, [dispatch]);
+
+
+  var tenant = tenants.find((t) => t.slug === currentTenant) || TENANTS[currentTenant];
   useTheme(tenant);
   var p = tenant?.primary,
     s = tenant.secondary,
@@ -96,255 +55,12 @@ function App() {
     }, 3500);
   }
 
-  function loginUser(user) {
-    setCurrentUser(user);
-    setUserRole(user.role);
-    // if (TENANTS[user.tenant]) setCurrentTenant(user.tenant);
-    setView(
-      user.role === "admin"
-        ? "admin"
-        : user.role === "superAdmin"
-          ? "superadmin"
-          : "learner",
-    );
-    notify("Welcome back, " + user.name.split(" ")[0] + "!");
-  }
 
   function logout() {
     setView("landing");
     setUserRole(null);
     setCurrentUser(null);
     setActiveCourse(null);
-  }
-
-  function openCourse(course) {
-    setActiveCourse(course);
-    setActiveLesson(0);
-    setAssessSubmitted(false);
-    setView("course");
-  }
-
-  function publishCourse(id, currentStatus) {
-    // Determine new status
-    const newStatus = currentStatus === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
-    // Update server via API (Redux thunk)
-    dispatch(updateCourse({ id, updatedData: { status: newStatus } }))
-      .unwrap()
-      .then((updatedCourse) => {
-        // Update local state after successful server update
-        setCourses((cs) =>
-          cs.map((c) =>
-            c.id === id ? { ...c, status: updatedCourse.status } : c,
-          ),
-        );
-        notify("Status updated");
-      })
-      .catch((err) => {
-        notify("Failed to update status: " + err.error || err.message);
-      });
-  }
-  var BLANK_COURSE = {
-    title: "",
-    cat: "Technology",
-    level: "BEGINNER",
-    nqf: 4,
-    credits: 10,
-    price: "",
-    free: true,
-    desc: "",
-    thumb: "📘",
-    saqaId: "",
-    passingScore: 75,
-    dripEnabled: false,
-  };
-
-  // useEffect(() => {
-  //   if (getStoreView?.length > 0) {
-  //     setView(getStoreView);
-  //     localStorage.removeItem("view");
-  //   }
-  // }, [getStoreView])
-
-  function openCourseEditor(course) {
-    if (course) {
-      // Edit existing course — pre-populate all fields
-      setEditingCourse(course);
-
-      // Set the new course data, including modules and lessons
-      setNewCourse({
-        title: course.title || "",
-        cat: course.cat || "Technology",
-        level: course.level || "BEGINNER",
-        nqf: course.nqf || 4,
-        credits: course.credits || 10,
-        price: course.price || "",
-        free: course.free !== false,
-        desc: course.desc || "",
-        thumb: course.thumb || "📘",
-        saqaId: course.saqaId || "",
-        passingScore: course.passingScore || 75,
-        dripEnabled: course.dripEnabled || false,
-        modules: course.modules.map((module) => ({
-          _id: module._id, // Ensure module _id is present
-          moduleName: module.moduleName, // Ensure moduleName is set
-          lessons: module.lessons || [], // Ensure lessons are present
-        })),
-      });
-
-      // Set the modules in the course
-      setCourseModules(course.modules || []);
-      setActiveModuleIdx(0); // Or set based on what module needs to be active
-    } else {
-      // Create new course
-      setEditingCourse(null);
-      setNewCourse(BLANK_COURSE);
-      setCourseModules([
-        {
-          id: "m_" + Date.now(),
-          moduleName: "Module 1: Introduction",
-          lessons: [
-            {
-              id: "l_" + Date.now(),
-              title: "Welcome & Overview",
-              type: "VIDEO",
-              desc: "",
-              url: "",
-            },
-          ],
-        },
-      ]);
-      setActiveModuleIdx(0);
-    }
-    setCourseBuilderOpen(true);
-  }
-
-  async function saveCourse() {
-    const title = newCourse.title ? newCourse.title.trim() : "";
-    if (!title) {
-      notify("Course title is required.", "error");
-      return;
-    }
-
-    const totalLessons = courseModules.reduce(
-      (s, m) => s + (m.lessons ? m.lessons.length : 0),
-      0,
-    );
-
-    // Validate modules and lessons before sending to the backend
-    for (const module of courseModules) {
-      if (!module.moduleName) {
-        notify("Module name is required.", "error");
-        return;
-      }
-
-      if (!module.lessons || module.lessons.length === 0) {
-        notify("Each module should have at least one lesson.", "error");
-        return;
-      }
-
-      for (const lesson of module.lessons) {
-        if (!lesson.title) {
-          notify("Each lesson should have a title.", "error");
-          return;
-        }
-
-        if (!lesson.type) {
-          notify(
-            "Each lesson should have a type (e.g., VIDEO, TEXT).",
-            "error",
-          );
-          return;
-        }
-      }
-    }
-
-    // Construct courseData with the full module object
-    const courseData = {
-      title: title,
-      cat: newCourse.cat,
-      level: newCourse.level,
-      nqf: Number(newCourse.nqf),
-      credits: Number(newCourse.credits) || 10,
-      desc: newCourse.desc || "",
-      price: newCourse.free ? 0 : Number(newCourse.price) || 0,
-      free: newCourse.free,
-      thumb: newCourse.thumb || "📘",
-      saqaId: newCourse.saqaId || "",
-      passingScore: Number(newCourse.passingScore) || 75,
-      dripEnabled: newCourse.dripEnabled || false,
-      modules: courseModules,
-      lessons: totalLessons,
-      setaAffiliation: newCourse.setaAffiliation,
-      type:
-        currentUser.tenantId.slug === "acme"
-          ? "acme"
-          : currentUser.tenantId.slug === "techpro"
-            ? "techpro"
-            : "skillivio",
-    };
-
-    try {
-      if (editingCourse) {
-        // Update existing course
-        await dispatch(
-          updateCourse({ id: editingCourse._id, updatedData: courseData }),
-        );
-        notify(`"${title}" updated successfully!`);
-      } else {
-        // Create a new course
-        await dispatch(createCourses(courseData));
-        notify(`"${title}" created! Ready to publish.`);
-      }
-
-      // Reset state after saving
-      setCourseBuilderOpen(false);
-      setEditingCourse(null);
-      setNewCourse(BLANK_COURSE);
-      setCourseModules([]);
-      setActiveModuleIdx(null);
-    } catch (error) {
-      notify("Error saving course: " + error.message, "error");
-    }
-  }
-
-
-
-  // Keep legacy name for backward compat
-  function createCourse() {
-    var title = newCourse.title ? newCourse.title.trim() : "";
-    if (!title) {
-      notify("Course title is required.", "error");
-      return;
-    }
-    var totalLessons = courseModules.reduce(function (s, m) {
-      return s + (m.lessons ? m.lessons.length : 0);
-    }, 0);
-    var courseData = {
-      title: title,
-      cat: newCourse.cat,
-      level: newCourse.level,
-      nqf: Number(newCourse.nqf),
-      credits: Number(newCourse.credits) || 10,
-      desc: newCourse.desc || "",
-      price: newCourse.free ? 0 : Number(newCourse.price) || 0,
-      free: newCourse.free,
-      thumb: newCourse.thumb || "📘",
-      saqaId: newCourse.saqaId || "",
-      passingScore: Number(newCourse.passingScore) || 75,
-      dripEnabled: newCourse.dripEnabled || false,
-      modules: courseModules,
-      lessons: totalLessons,
-      type:
-        currentUser.tenantId.slug === "acme"
-          ? "acme"
-          : currentUser.tenantId.slug === "techpro"
-            ? "techpro"
-            : "skillivio",
-      setaAffiliation: newCourse.setaAffiliation,
-    };
-    dispatch(createCourses(courseData));
-    setCourseBuilderOpen(false);
-    setEditingCourse(null);
   }
 
   // CSS helpers
@@ -448,7 +164,6 @@ function App() {
     },
   };
 
-  // Shared props for portal components
   var sharedPortalProps = {
     p: p,
     s: s,
@@ -470,97 +185,10 @@ function App() {
 
   if (view === "contact")
     return <ContactUsPage {...sharedPortalProps} p={p} s={s} tenant={tenant} setSelectConditionAndPolicy={setSelectConditionAndPolicy}
-  view={view}
-  currentTenant={currentTenant}
+      view={view}
+      setView={setView}
+      currentTenant={currentTenant}
       onBack={function () { setView("landing"); }} />;
-
-
-
-  if (view === "login")
-    return (
-      <LoginPage
-        onLogin={loginUser}
-        onBack={function () {
-          setView("landing");
-        }}
-        tenant={tenant}
-        p={p}
-        s={s}
-        currentTenant={currentTenant}
-      />
-    );
-
-  if (view === "superadmin")
-    return (
-      <SkillivioSuperAdmin
-        {...sharedPortalProps}
-        courses={courses}
-        setCurrentTenant={setCurrentTenant}
-        setUserRole={setUserRole}
-      />
-    );
-
-  if (view === "learner")
-    return (
-      <LearnerPortal
-        {...sharedPortalProps}
-        courses={courses}
-        openCourse={openCourse}
-        uploadingForCourse={uploadingForCourse}
-      />
-    );
-
-  if (view === "admin")
-    return (
-      <AdminDashboard
-        {...sharedPortalProps}
-        courses={courses}
-        setCourses={setCourses}
-        openCourse={openCourse}
-        publishCourse={publishCourse}
-        courseBuilderOpen={courseBuilderOpen}
-        setCourseBuilderOpen={setCourseBuilderOpen}
-        setUploadingForCourse={setUploadingForCourse}
-        newCourse={newCourse}
-        setNewCourse={setNewCourse}
-        createCourse={createCourse}
-        setEditingCourse={setEditingCourse}
-        saveCourse={saveCourse}
-        openCourseEditor={openCourseEditor}
-        BLANK_COURSE={BLANK_COURSE}
-        courseModules={courseModules}
-        setCourseModules={setCourseModules}
-        activeModuleIdx={activeModuleIdx}
-        setActiveModuleIdx={setActiveModuleIdx}
-        editingCourse={editingCourse}
-      />
-    );
-
-  if (view === "course" && activeCourse)
-    return (
-      <CoursePlayer
-        currentUser={currentUser}
-        {...sharedPortalProps}
-        activeCourse={activeCourse}
-        activeLesson={activeLesson}
-        setActiveLesson={setActiveLesson}
-        setAssessSubmitted={setAssessSubmitted}
-      />
-    );
-
-  if (view === "assessment")
-    return (
-      <AssessmentView
-        {...sharedPortalProps}
-        activeCourse={activeCourse}
-        setAssessSubmitted={setAssessSubmitted}
-      />
-    );
-
-  if (view === "certificate")
-    return (
-      <CertificateView {...sharedPortalProps} activeCourse={activeCourse} />
-    );
 
   return null;
 }

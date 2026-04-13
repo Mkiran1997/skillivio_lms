@@ -21,6 +21,7 @@ export async function POST(req) {
   await dbConnect();
   try {
     const data = await req.json();
+    console.log(data);
     const contactus = await contactUs.create(data);
     return NextResponse.json({
       ...contactus.toObject(),

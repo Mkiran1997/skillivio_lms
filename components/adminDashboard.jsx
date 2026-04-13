@@ -17,6 +17,7 @@ import * as XLSX from "xlsx";
 import { fetchEnrollment } from "@/store/slices/enrollmentSlice";
 import EnrolmentForm from "./enrolmentForm";
 import { fetchcontactUs } from "@/store/slices/contactUsSlice";
+import { fetchlessonStatus } from "@/store/slices/lessonStatusSlice";
 // import StatCard from "./StatCard";
 // import PaginationBar from "./PaginationBar";
 // import ToggleSwitch from "./ToggleSwitch";
@@ -215,6 +216,7 @@ function AdminDashboard({ ...props }) {
     dispatch(fetchbankdetails());
     dispatch(fetchEnrollment());
     dispatch(fetchcontactUs());
+    dispatch(fetchlessonStatus());
   }, [dispatch]);
 
   useEffect(() => {
@@ -490,6 +492,7 @@ function AdminDashboard({ ...props }) {
   const LearnerCourse = activeLearner && Enrollment.filter(
     (l) => l.learnerId._id === activeLearner._id,
   );
+
 
   return (
     <div style={{ display: "flex", ...css.page }}>
@@ -1273,8 +1276,7 @@ function AdminDashboard({ ...props }) {
                                     placeholder="Lesson title"
                                   />
                                   {selectedLessonType === "TEXT" &&
-                                    les.type === "TEXT" ? (
-                                    (console.log("text selected"),
+                                    les.type === "TEXT" ? 
                                       (
                                         <input
                                           key="text-input"
@@ -1303,8 +1305,8 @@ function AdminDashboard({ ...props }) {
                                           }}
                                           placeholder="Brief description (optional)"
                                         />
-                                      ))
-                                  ) : (
+                                      )
+                                   : (
                                     <div
                                       style={{
                                         display: "flex",
@@ -2247,7 +2249,30 @@ function AdminDashboard({ ...props }) {
                     const Enrolled = Enrollment.filter(
                       (enroll) => enroll.learnerId.userId === l.userId._id,
                     ).length;
-                    const completed = /* Enrollment.filter(enroll => enroll.userId._id === l.userId.id).length*/ 0;
+                    const completedCoursesCount = Enrollment.filter(
+                      (enroll) => enroll.learnerId.userId === l.userId._id
+                    ).reduce((count, enroll) => {
+                      const course = enroll.courseId;
+
+                      // 👉 Total lessons in course
+                      const totalLessons =
+                        course?.modules?.flatMap((m) =>
+                          m.lessons.map((lesson) => lesson._id.toString())
+                        ).length || 0;
+
+
+                      // 👉 Completed lessons for this enrollment
+                      const completedLessons = lessonStatus.filter(
+                        (ls) =>
+                          ls.enrollId._id.toString() === enroll._id.toString()
+                      ).length;
+                      // 👉 Check if fully completed
+                      if (totalLessons > 0 && completedLessons === totalLessons) {
+                        return count + 1;
+                      }
+
+                      return count;
+                    }, 0);
                     const userCourses = Enrollment.filter(
                       (enroll) => enroll.learnerId.userId === l.userId._id,
                     ).reduce((prev, enroll) => {
@@ -2348,7 +2373,7 @@ function AdminDashboard({ ...props }) {
                             color: "#10B981",
                           }}
                         >
-                          {completed}
+                          {completedCoursesCount}
                         </td>
                         <td
                           style={{
@@ -2385,7 +2410,25 @@ function AdminDashboard({ ...props }) {
 
         {activeLearner && tab === "module" && (
           <div className="fade">
-            <h1 style={{ ...css.h1, marginBottom: 24 }}>Learner Courses</h1>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 24,
+              }}
+            >
+              <h1 style={{ ...css.h1, marginBottom: 24 }}>{activeLearner.userId.name} Courses</h1>
+
+
+              <button
+                onClick={() => setTab("learners")}
+                style={css.btn(p)}
+              >
+                Back
+              </button>
+
+            </div>
             <div
               style={{
                 display: "grid",
@@ -2438,7 +2481,6 @@ function AdminDashboard({ ...props }) {
                 }, {});
 
                 const finalProgress = Object.values(courseStats);
-                console.log(finalProgress);
                 return (
                   <div
                     key={c._id}
@@ -2468,32 +2510,47 @@ function AdminDashboard({ ...props }) {
                       >
                         {c?.courseId.title}
                       </div>
-                      {finalProgress.map(
-                        (f) =>
-                          f.courseName === c.courseId.title && (
+                      {
+                        finalProgress.map((f) =>
+                          f.courseName === c.courseId.title ? (
                             <div key={f.courseName}>
-                              <div
-                                style={{
-                                  height: 6,
-                                  background: "#f1f5f9",
-                                  borderRadius: 3,
-                                  margin: "6px 0",
-                                  overflow: "hidden",
-                                }}
-                              >
+                              <div style={{
+                                height: 6,
+                                background: "#f1f5f9",
+                                borderRadius: 3,
+                                margin: "6px 0",
+                                overflow: "hidden"
+                              }}>
                                 {/* Change 'background: p' to a color string */}
-                                <div
-                                  style={{
-                                    height: "100%",
-                                    width: f.progressPercentage + "%",
-                                    background: p, // Use a hex code or color name here
-                                    borderRadius: 3,
-                                  }}
-                                />
+                                <div style={{
+                                  height: "100%",
+                                  width: f.progressPercentage + "%",
+                                  background: p, // Use a hex code or color name here
+                                  borderRadius: 3
+                                }} />
                               </div>
+
                             </div>
-                          ),
-                      )}
+                          ) : <div key={f.courseName}>
+                            <div style={{
+                              height: 6,
+                              background: "#f1f5f9",
+                              borderRadius: 3,
+                              margin: "6px 0",
+                              overflow: "hidden"
+                            }}>
+                              {/* Change 'background: p' to a color string */}
+                              <div style={{
+                                height: "100%",
+                                width: 0 + "%",
+                                background: p, // Use a hex code or color name here
+                                borderRadius: 3
+                              }} />
+                            </div>
+
+                          </div>
+                        )
+                      }
                       <div
                         style={{
                           display: "flex",
@@ -3740,7 +3797,22 @@ function AdminDashboard({ ...props }) {
                               gap: 10,
                             }}
                           >
-                            <span style={{ fontSize: 20 }}>{c.thumb}</span>
+                            <div
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: "50%",
+                                background: p + "20",
+                                color: p,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 12,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {c?.firstName.toUpperCase()[0]}{c?.lastName.toUpperCase()[0]}
+                            </div>
                             <div>
                               <div style={{ fontWeight: 600, fontSize: 13 }}>
                                 {c?.firstName} {c?.lastName}

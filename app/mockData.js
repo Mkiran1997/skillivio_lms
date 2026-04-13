@@ -1,8 +1,25 @@
 export const TENANTS = {
-    skillivio: { slug: "skillivio", name: "Skillivio Demo", primary: "#2FBF71", secondary: "#2E3044", accent: "#F4A800", logo: "S", tagline: "Learn. Evolve. Succeed.", plan: "ENTERPRISE" },
+    skillivio: { slug: "skillivio", name: "Skillivio", primary: "#2FBF71", secondary: "#2E3044", accent: "#F4A800", logo: "S", tagline: "Learn. Evolve. Succeed.", plan: "ENTERPRISE" },
     acme: { slug: "acme", name: "ACME Training Academy", primary: "#7C3AED", secondary: "#1E1B4B", accent: "#F59E0B", logo: "A", tagline: "Building Skills. Building Futures.", plan: "PROFESSIONAL" },
     techpro: { slug: "techpro", name: "TechPro Institute", primary: "#0EA5E9", secondary: "#0C2340", accent: "#10B981", logo: "T", tagline: "Skills for the Digital Age.", plan: "ENTERPRISE" },
 };
+
+// import { fetchtenants } from "@/store/slices/tenantSlice";
+// import { useEffect } from "react";
+// import { useDispatch, useSelector } from "react-redux";
+
+// const { tenants } = useSelector(state => state.tenants)
+// const dispatch = useDispatch();
+
+// useEffect(() => {
+//     dispatch(fetchtenants())
+// }, [dispatch]);
+
+
+// export const TENANTS = tenants.reduce((acc, tenant) => {
+//     acc[tenant.slug] = tenant;
+//     return acc;
+// }, {});
 
 export const COURSES = [
     { id: "c1", title: "Project Management Fundamentals", cat: "Management", level: "BEGINNER", nqf: 4, credits: 15, price: 0, free: true, enrolled: 247, lessons: 20, progress: 0, status: "PUBLISHED", thumb: "📋" },

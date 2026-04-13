@@ -110,7 +110,7 @@ function SkillivioSuperAdmin({ ...props }) {
 
     var SB_ITEMS = [
         { id: "tenants", icon: "🏢", label: "Tenants", badge: tenants.filter(tenant=> tenant.slug!=="skillivio")?.length },
-        { id: "tiers", icon: "📦", label: "Tier Demos" },
+        { id: "tiers", icon: "📦", label: "Tier" },
         { id: "analytics", icon: "📊", label: "Global Analytics" },
         { id: "billing", icon: "💳", label: "Billing" },
         { id: "platform", icon: "⚙️", label: "Platform" },

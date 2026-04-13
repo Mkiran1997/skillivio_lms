@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { GLOBAL_CSS } from '../app/globalCss';
 import { TENANTS } from "../app/mockData";
 import Toast from './toast';
+import { usePathname } from "next/navigation";
 
 
 function LandingPage({ ...props }) {
 
     const { p, s, tenant, setView, currentTenant, setCurrentTenant, notification, css } = props;
-
+    const pathname = usePathname();
+    const isAdmin = pathname === "/admin";
 
 
     return (
@@ -18,21 +20,88 @@ function LandingPage({ ...props }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {
                         currentTenant === "skillivio" ?
-                            <img src='/logo/skillivioLogo.jpeg' alt='skillivio' style={{ width: 38, height: 38, objectFit: "contain", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
-                            : <div style={{ width: 38, height: 38, background: p, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }}>{tenant.logo}</div>
+                            <img src='/logo/skillivioLogo.jpeg' alt={tenant.logo} style={{ width: 38, height: 38, objectFit: "contain", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
+                            : <img src={tenant?.logo} alt={tenant?.name[0]} style={{ width: 38, height: 38, background: p, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
 
-                    }                    <div>
-                        <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>{tenant.name}</div>
-                        <div style={{ color: p, fontSize: 11 }}>{tenant.tagline}</div>
+                    }
+                    <div>
+                        <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>{tenant?.name}</div>
+                        <div style={{ color: p, fontSize: 11 }}>{tenant?.tagline}</div>
                     </div>
                 </div>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <select onChange={function (e) { setCurrentTenant(e.target.value); }} value={currentTenant}
-                        style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: "pointer", outline: "none" }}>
-                        {Object.entries(TENANTS).map(function (pair) { return <option key={pair[0]} value={pair[0]} style={{ background: "#333" }}>{pair[1].name}</option>; })}
-                    </select>
-                    <button onClick={function () { setView("login"); }} style={css.btn(p)}>Log In</button>
-                </div>
+                {
+                    isAdmin && (
+                        <div style={{
+                            display: "flex",
+                            gap: "12px",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "12px",
+                            backdropFilter: "blur(10px)"
+                        }}>
+                            <select
+                                onChange={(e) => setCurrentTenant(e.target.value)}
+                                value={currentTenant}
+                                style={{
+                                    background: "rgba(255, 255, 255, 0.05)",
+                                    border: `1px solid rgba(255, 255, 255, 0.2)`,
+                                    color: "#fff",
+                                    borderRadius: "10px",
+                                    padding: "10px 16px",
+                                    fontSize: "14px",
+                                    fontWeight: "500",
+                                    cursor: "pointer",
+                                    outline: "none",
+                                    appearance: "none", // Removes default browser arrow for a cleaner look
+                                    transition: "all 0.2s ease-in-out",
+                                    minWidth: "160px"
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = p;
+                                    e.target.style.background = "rgba(255, 255, 255, 0.1)";
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                                    e.target.style.background = "rgba(255, 255, 255, 0.05)";
+                                }}
+                            >
+                                {Object.entries(TENANTS).map(([key, tenant]) => (
+                                    <option key={key} value={key} style={{ background: "#1a1a1a", color: "#fff" }}>
+                                        {tenant.name}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <button
+                                onClick={() => setView("login")}
+                                style={{
+                                    background: p,
+                                    border: "none",
+                                    color: "white",
+                                    borderRadius: "10px",
+                                    padding: "10px 24px",
+                                    fontSize: "14px",
+                                    fontWeight: "600",
+                                    cursor: "pointer",
+                                    boxShadow: `0 4px 15px -5px ${p}`,
+                                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.transform = "translateY(-2px)";
+                                    e.target.style.filter = "brightness(1.1)";
+                                    e.target.style.boxShadow = `0 6px 20px -5px ${p}`;
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.transform = "translateY(0)";
+                                    e.target.style.filter = "brightness(1)";
+                                    e.target.style.boxShadow = `0 4px 15px -5px ${p}`;
+                                }}
+                            >
+                                Log In
+                            </button>
+                        </div>
+                    )
+                }
             </nav>
             <div style={{ padding: "80px 48px 60px", display: "flex", alignItems: "center", gap: 60, maxWidth: 1200, margin: "0 auto" }}>
                 <div style={{ flex: 1, animation: "fadeIn 0.6s ease" }}>
@@ -40,8 +109,8 @@ function LandingPage({ ...props }) {
                     <h1 style={{ fontSize: 52, fontWeight: 900, color: "#fff", lineHeight: 1.05, margin: "0 0 20px" }}>Your Brand.<br /><span style={{ color: p }}>Your Platform.</span><br />QCTO Ready.</h1>
                     <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 17, lineHeight: 1.7, maxWidth: 500, margin: "0 0 36px" }}>A fully managed LMS delivered under your brand — configured for QCTO compliance from day one. Learner analytics, assessments, PoE and SETA exports included.</p>
                     <div style={{ display: "flex", gap: 14 }}>
-                        <button onClick={function () { setView("login"); }} style={{ ...css.btn(p), padding: "14px 28px", fontSize: 16 }}>Launch Platform →</button>
-                        <button onClick={function () { setView("contact"); }} style={{ ...css.btn(p), padding: "14px 28px", fontSize: 16 }}>Contact Us →</button>
+                        {/* <button onClick={function () { setView("login"); }} style={{ ...css.btn(p), padding: "14px 28px", fontSize: 16 }}>Launch Platform →</button> */}
+                        <button onClick={function () { setView("contact"); }} style={{ ...css?.btn(p), padding: "14px 28px", fontSize: 16 }}>Contact Us →</button>
                     </div>
                     <div style={{ display: "flex", gap: 32, marginTop: 48 }}>
                         {[["500+", "SDPs Trust Us"], ["50K+", "Learners Served"], ["QCTO", "Aligned"]].map(function (pair) {
@@ -54,7 +123,7 @@ function LandingPage({ ...props }) {
                         </div>
                         <div style={{ display: "flex", gap: 12 }}>
                             {[
-                                { icon: "fab fa-facebook-f", url: "https://skillivio.netlify.app/" },
+                                { icon: "fab fa-facebook-f", url: "https://www.facebook.com/share/18YVwWrqoS/?mibextid=wwXIfr" },
                                 { icon: "fab fa-linkedin-in", url: "https://www.linkedin.com/company/skillivio/" },
                                 { icon: "fab fa-instagram", url: "https://www.instagram.com/skillivio_?igsh=bWlkcG5oODByZXdx&wa_status_inline=true" }
                             ].map((social, index) => (

@@ -106,9 +106,9 @@ function CoursePlayer({ ...props }) {
     }
     var cur = lessons[activeLesson] || lessons[0];
 
-    const course= typeof activeCourse.courseId === "object"
-            ? activeCourse.courseId
-            : activeCourse
+    const course = typeof activeCourse.courseId === "object"
+        ? activeCourse.courseId
+        : activeCourse
 
     // Course materials list (simulated — in production fetched from API)
     var MATERIALS = [
@@ -187,7 +187,7 @@ function CoursePlayer({ ...props }) {
 
     var canProgress = introAccepted && instructionsAck;
 
-    var checkCompleted =( typeof activeCourse.courseId==="object") && lessonStatus.find((ls) =>   activeCourse.courseId.modules.some((a) => a.lessons.some((l) => l._id === ls.lessonId._id)))?.lessonId?._id  || 0;
+    var checkCompleted = (typeof activeCourse.courseId === "object") && lessonStatus.find((ls) => activeCourse.courseId.modules.some((a) => a.lessons.some((l) => l._id === ls.lessonId._id)) && ls.enrollId.learnerId.userId === currentUser._id)?.lessonId?._id;
 
     // If learner hasn't accepted yet, redirect from lessons tab
     function handleLessonTabClick() {
@@ -448,7 +448,7 @@ function CoursePlayer({ ...props }) {
                                             flexShrink: 0,
                                         }}
                                     >
-                                       
+
                                         {lesson.completed ? "✓" : i + 1}
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1037,17 +1037,31 @@ function CoursePlayer({ ...props }) {
                                 </span>
                             </div>
                             {
-                                
-                                checkCompleted === cur.id ? <button onClick={function () { notify("Marked complete!"); }}
-                                    disabled
-                                    style={{ background: "gray", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "not-allowed" }}>
-                                    ✓ Mark Complete
-                                </button> :
-                                    <button onClick={function () { handleMarkComplete(), notify("Marked complete!"); }}
-                                        style={{ background: "#10B981", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                                (activeCourse.courseId && typeof activeCourse.courseId === "object" && currentUser.role !== "admin") && (
+                                    <button
+                                        onClick={() => {
+                                            if (checkCompleted !== cur.id) {
+                                                handleMarkComplete();
+                                            }
+                                            notify("Marked complete!");
+                                        }}
+                                        disabled={checkCompleted === cur.id}
+                                        style={{
+                                            background: checkCompleted === cur.id ? "gray" : "#10B981",
+                                            color: "#fff",
+                                            border: "none",
+                                            borderRadius: 8,
+                                            padding: "8px 16px",
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            cursor: checkCompleted === cur.id ? "not-allowed" : "pointer"
+                                        }}
+                                    >
                                         ✓ Mark Complete
                                     </button>
+                                ) 
                             }
+
                         </div>
                         <div
                             style={{

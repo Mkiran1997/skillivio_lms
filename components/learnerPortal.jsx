@@ -195,13 +195,10 @@ function LearnerPortal({ ...props }) {
                                     const learner = enrollment?.learnerId;
                                     const course = enrollment?.courseId;
 
-                                    // 1. Filter for the current user
                                     if (learner?.userId === currentUser._id) {
                                         const courseId = course?._id?.toString() || "Unknown Course";
 
                                         if (!acc[courseId]) {
-                                            // 2. Calculate the "Master Total" of lessons from the Course Schema
-                                            // This is the total number of lessons that exist in the course
                                             const totalPossibleLessons = course?.modules?.flatMap(
                                                 (module) => module.lessons.map((l) => l._id)
                                             ).length || 0;
@@ -235,27 +232,46 @@ function LearnerPortal({ ...props }) {
                                             <div style={{ fontWeight: 700, fontSize: 14 }}>{c.courseId.title}</div>
                                             {
                                                 finalProgress.map((f) =>
-                                                    f.courseName === c.courseId.title &&
-                                                    <div key={f.courseName}>
-                                                        <div style={{
-                                                            height: 6,
-                                                            background: "#f1f5f9",
-                                                            borderRadius: 3,
-                                                            margin: "6px 0",
-                                                            overflow: "hidden"
-                                                        }}>
-                                                            {/* Change 'background: p' to a color string */}
+                                                    f.courseName === c.courseId.title ?
+                                                        (<div key={f.courseName}>
                                                             <div style={{
-                                                                height: "100%",
-                                                                width: f.progressPercentage + "%",
-                                                                background: p, // Use a hex code or color name here
-                                                                borderRadius: 3
-                                                            }} />
-                                                        </div>
-                                                        <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                                                            {f.progressPercentage}% complete
-                                                        </div>
-                                                    </div>
+                                                                height: 6,
+                                                                background: "#f1f5f9",
+                                                                borderRadius: 3,
+                                                                margin: "6px 0",
+                                                                overflow: "hidden"
+                                                            }}>
+                                                                {/* Change 'background: p' to a color string */}
+                                                                <div style={{
+                                                                    height: "100%",
+                                                                    width: f.progressPercentage + "%",
+                                                                    background: p, // Use a hex code or color name here
+                                                                    borderRadius: 3
+                                                                }} />
+                                                            </div>
+                                                            <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                                                                {f.progressPercentage}% complete
+                                                            </div>
+                                                        </div>) : (<div key={f.courseName}>
+                                                            <div style={{
+                                                                height: 6,
+                                                                background: "#f1f5f9",
+                                                                borderRadius: 3,
+                                                                margin: "6px 0",
+                                                                overflow: "hidden"
+                                                            }}>
+                                                                {/* Change 'background: p' to a color string */}
+                                                                <div style={{
+                                                                    height: "100%",
+                                                                    width: 0 + "%",
+                                                                    background: p, // Use a hex code or color name here
+                                                                    borderRadius: 3
+                                                                }} />
+                                                            </div>
+                                                            <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                                                                0% complete
+                                                            </div>
+                                                        </div>)
                                                 )
                                             }
                                         </div>
@@ -323,13 +339,10 @@ function LearnerPortal({ ...props }) {
                                     const learner = enrollment?.learnerId;
                                     const course = enrollment?.courseId;
 
-                                    // 1. Filter for the current user
                                     if (learner?.userId === currentUser._id) {
                                         const courseId = course?._id?.toString() || "Unknown Course";
 
                                         if (!acc[courseId]) {
-                                            // 2. Calculate the "Master Total" of lessons from the Course Schema
-                                            // This is the total number of lessons that exist in the course
                                             const totalPossibleLessons = course?.modules?.flatMap(
                                                 (module) => module.lessons.map((l) => l._id)
                                             ).length || 0;
@@ -342,10 +355,8 @@ function LearnerPortal({ ...props }) {
                                             };
                                         }
 
-                                        // 3. Increment lessons that have a record in lessonStatus
                                         acc[courseId].lessonsStartedOrFinished += 1;
 
-                                        // 4. Calculate the percentage
                                         const { lessonsStartedOrFinished, totalLessonsInCourse } = acc[courseId];
                                         acc[courseId].progressPercentage = totalLessonsInCourse > 0
                                             ? Math.round((lessonsStartedOrFinished / totalLessonsInCourse) * 100)
@@ -362,7 +373,7 @@ function LearnerPortal({ ...props }) {
                                             <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{c?.courseId.title}</div>
                                             {
                                                 finalProgress.map((f) =>
-                                                    f.courseName === c.courseId.title && (
+                                                    f.courseName === c.courseId.title ? (
                                                         <div key={f.courseName}>
                                                             <div style={{
                                                                 height: 6,
@@ -381,17 +392,38 @@ function LearnerPortal({ ...props }) {
                                                             </div>
 
                                                         </div>
-                                                    )
+                                                    ) : <div key={f.courseName}>
+                                                        <div style={{
+                                                            height: 6,
+                                                            background: "#f1f5f9",
+                                                            borderRadius: 3,
+                                                            margin: "6px 0",
+                                                            overflow: "hidden"
+                                                        }}>
+                                                            {/* Change 'background: p' to a color string */}
+                                                            <div style={{
+                                                                height: "100%",
+                                                                width: 0 + "%",
+                                                                background: p, // Use a hex code or color name here
+                                                                borderRadius: 3
+                                                            }} />
+                                                        </div>
+
+                                                    </div>
                                                 )
                                             }
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                                 {
                                                     finalProgress.map((f) =>
-                                                        f.courseName === c.courseId.title && (
+                                                        f.courseName === c.courseId.title ? (
                                                             <div key={f.courseName}>
                                                                 <span style={{ fontSize: 11, color: "#94a3b8" }}>{f.progressPercentage}%</span>
 
 
+                                                            </div>
+                                                        ) : (
+                                                            <div key={f.courseName}>
+                                                                <span style={{ fontSize: 11, color: "#94a3b8" }}>0%</span>
                                                             </div>
                                                         )
                                                     )
