@@ -69,6 +69,28 @@ export const updateCourse = createAsyncThunk(
   },
 );
 
+export const updateCourseStatus = createAsyncThunk(
+  "courses/updateCourseStatus",
+  async ({ id, status }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/courses/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData);
+      }
+
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue({ error: error.message });
+    }
+  },
+);
+
 // 4️⃣ DELETE a course
 export const deleteCourse = createAsyncThunk(
   "course/deleteCourse",
@@ -191,7 +213,7 @@ const courseSlice = createSlice({
                         lessonIndex
                       ] = {
                         ...state.Course[index].modules[moduleIndex].lessons[
-                          lessonIndex
+                        lessonIndex
                         ],
                         ...updatedLesson,
                       };
@@ -222,6 +244,25 @@ const courseSlice = createSlice({
       .addCase(deleteCourse.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.error || "Something went wrong";
+      }).addCase(updateCourseStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateCourseStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedCourse = action.payload;
+        const index = state.Course.findIndex(
+          (course) => course._id === updatedCourse._id
+        );
+
+        if (index !== -1) {
+          // ✅ ONLY update status (DO NOT touch modules/lessons)
+          state.Course[index].status = updatedCourse.status;
+        }
+      })
+      .addCase(updateCourseStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.error || "Failed to update status";
       });
   },
 });

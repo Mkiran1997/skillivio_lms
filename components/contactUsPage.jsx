@@ -4,17 +4,20 @@ import Toast from './toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { createcontactUs, fetchcontactUs } from '@/store/slices/contactUsSlice';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 function ContactUsPage({ ...props }) {
-    const { p, s, tenant, notification, css, onBack, notify, currentTenant,view } = props;
-    const [selectConditionAndPolicy, setSelectConditionAndPolicy] = useState("");
+    const { p, s, tenant, notification, css, onBack, notify, currentTenant, view, setView } = props;
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [selectedDate, setSelectedDate] = useState("");
     const dispatch = useDispatch();
+    const router = useRouter();
 
 
     const [formData, setFormData] = useState({
         firstName: "", lastName: "", businessEmail: "", phoneNumber: "",
         company: "", noOfLMs: "", jobTitle: "", country: "South Africa",
-        industry: "", status: "pending"
+        industry: "", status: "pending",/* date: ""*/
     });
     const [errors, setErrors] = useState({});
     const validateForm = () => {
@@ -78,32 +81,33 @@ function ContactUsPage({ ...props }) {
             });
             setErrors({})
             notify("successfully send...")
+            router.push("https://calendly.com/marylin-skillivio/30min")
         }
     };
-
     return (
-        <div style={{ minHeight: "100vh", background: s, fontFamily: "'Segoe UI',system-ui,sans-serif", color: "#fff" }}>
+        <div style={{ minHeight: "100vh", background: s, fontFamily: "'Segoe UI',system-ui,sans-serif" }}>
             <Toast notification={notification} />
             <style>{GLOBAL_CSS}</style>
 
-            <nav style={navStyle(s)}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between", width: "100%", }}>
-                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                        <div style={{ width: 40, height: 40, background: p, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, boxShadow: `0 4px 12px ${p}44` }}>
-                            {tenant.logo}
-                        </div>
-                        <div>
-                            <div style={{ color: "#fff", fontWeight: 800, fontSize: 18, lineHeight: 1 }}>{tenant.name}</div>
-                            <div style={{ color: p, fontSize: 11, marginTop: 4, fontWeight: 600, letterSpacing: 0.5 }}>{tenant.tagline}</div>
-                        </div>
-                    </div>
-                    <button onClick={onBack} className="back-btn" style={backButtonStyle}>
-                        <span style={{ fontSize: 18 }}>←</span> Back
-                    </button>
-                </div>
-            </nav>
+            <nav style={{ padding: "18px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    {
+                        currentTenant === "skillivio" ?
+                            <img src='/logo/skillivioLogo.jpeg' alt={tenant.logo} style={{ width: 38, height: 38, objectFit: "contain", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
+                            : <img src={tenant?.logo} alt={tenant?.name[0]} style={{ width: 38, height: 38, background: p, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
 
-            <div style={{ paddingTop: "140px", paddingBottom: "80px", display: "flex", justifyContent: "center", paddingLeft: 20, paddingRight: 20 }}>
+                    }
+                    <div>
+                        <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>{tenant?.name}</div>
+                        <div style={{ color: p, fontSize: 11 }}>{tenant?.tagline}</div>
+                    </div>
+                </div>
+                <button onClick={onBack} className="back-btn" style={backButtonStyle}>
+                    <span style={{ fontSize: 18 }}>←</span> Back
+                </button>
+
+            </nav>
+            <div style={{ paddingTop: "65px", paddingBottom: "80px", display: "flex", justifyContent: "center", paddingLeft: 20, paddingRight: 20 }}>
                 <div style={cardStyle(s)}>
                     <div style={{ textAlign: "center", marginBottom: 50 }}>
                         <div style={{ background: `${p}15`, color: p, padding: "6px 14px", borderRadius: 100, fontSize: 12, fontWeight: 700, display: "inline-block", marginBottom: 16, border: `1px solid ${p}33` }}>
@@ -245,9 +249,9 @@ function ContactUsPage({ ...props }) {
                                 />
                                 <span style={{ lineHeight: 1.5, color: "rgba(255, 255, 255, 0.7)", fontSize: "13px" }}>
                                     I confirm that I have read and agree to the
-                                    <Link onClick={()=> localStorage.setItem("view",view)} href={`/terms?tenant=${currentTenant}`} style={linkStyle(p)}> Terms & Conditions </Link>
+                                    <Link onClick={() => localStorage.setItem("view", view)} href={`/terms?tenant=${currentTenant}`} style={linkStyle(p)}> Terms & Conditions </Link>
                                     and
-                                    <Link onClick={()=> localStorage.setItem("view",view)} href={`/policy?tenant=${currentTenant}`} style={linkStyle(p)}> Privacy Policy</Link>.
+                                    <Link onClick={() => localStorage.setItem("view", view)} href={`/policy?tenant=${currentTenant}`} style={linkStyle(p)}> Privacy Policy</Link>.
                                     I also consent to receiving periodic platform updates and industry insights.
                                 </span>
                             </div>
@@ -259,10 +263,57 @@ function ContactUsPage({ ...props }) {
                             )}
                         </div>
 
-
-                        <button type="submit" className="submit-btn" style={submitButtonStyle(p)}>
-                            Request My Custom Demo —
+                        <button
+                            type="submit"
+                            className="submit-btn"
+                            style={submitButtonStyle(p)}
+                        // onClick={() => {
+                        //     if (!validateForm()) return; // ✅ validate first
+                        //     setShowCalendar(true);
+                        // }}
+                        >
+                            Send Request
                         </button>
+                        {/* <div>
+                            {showCalendar && (
+                                <div className="modal" onClick={() => setShowCalendar(false)}>
+                                    <div
+                                        className="modal-content"
+                                        style={{ "--primary": p }}
+                                        onClick={(e) => e.stopPropagation()} // prevent close when clicking inside
+                                    >
+                                        <span
+                                            className="modal-close"
+                                            onClick={() => setShowCalendar(false)}
+                                        >
+                                            ✕
+                                        </span>
+
+                                        <h3>Schedule Your Demo</h3>
+
+                                        <input
+                                            type="datetime-local"
+                                            value={selectedDate}
+                                            onChange={(e) => {
+                                                setSelectedDate(e.target.value);
+
+                                                handleChange({
+                                                    target: {
+                                                        name: "date",
+                                                        value: e.target.value,
+                                                        type: "text"
+                                                    }
+                                                });
+                                            }}
+                                        />
+
+                                        <button onClick={handleFinalSubmit}>
+                                            Confirm & Send
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div> */}
                     </form>
                 </div>
             </div>
@@ -270,15 +321,12 @@ function ContactUsPage({ ...props }) {
             <div style={{ padding: "48px", background: "rgba(0,0,0,0.2)", textAlign: "center" }}>
                 <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>© 2026 Skillivio Digital Learning Solutions • QCTO-Aligned • BBBEE Compliant • 🇿🇦 Proudly South African</div>
             </div>
+
         </div>
     );
 }
 
 // Custom Refined Styles
-const navStyle = (s) => ({
-    padding: "0 48px", height: "80px", display: "flex", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 1000,
-    alignItems: "center", background: `${s}ee`, backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)"
-});
 
 const cardStyle = (s) => ({
     width: "100%", maxWidth: "800px", background: `linear-gradient(135deg, ${s} 0%, #0a0a0c 100%)`, border: "1px solid rgba(255, 255, 255, 0.07)",
