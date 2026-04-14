@@ -1,7 +1,7 @@
 import Toast from "./toast";
 
 function AdminSidebar({ ...props }) {
- 
+
 
   const { tab, setTab, items, tenant, currentUser, userRole, currentTenant, logout, p, s, css, notification } = props;
   return (
@@ -25,7 +25,7 @@ function AdminSidebar({ ...props }) {
           }
           <div>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{tenant && tenant.name}</div>
-            <div style={{ color: p, fontSize: 10 }}>{tenant && tenant.plan}</div>
+            <div style={{ color: p, fontSize: 10 }}>{tenant && tenant.tier}</div>
           </div>
         </div>
       </div>
@@ -57,11 +57,11 @@ function AdminSidebar({ ...props }) {
             width: 34, height: 34, borderRadius: "50%", background: p, color: "#fff", display: "flex",
             alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0
           }}>
-            {currentUser ? currentUser.avatar : (userRole === "SUPER_ADMIN" ? "SA" : "AD")}
+            {currentUser ? currentUser.name[0].toUpperCase() + currentUser.tenantId.slug[0].toUpperCase() : (userRole === "superAdmin" ? "SA" : "AD")}
           </div>
           <div>
             <div style={{ color: "#fff", fontSize: 12, fontWeight: 600 }}>
-              {currentUser ? currentUser.name : (userRole === "SUPER_ADMIN" ? "Super Admin" : "Admin")}
+              {currentUser ? currentUser.name : (userRole === "superAdmin" ? "Super Admin" : "Admin")}
             </div>
             <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10 }}>
               {currentUser ? currentUser.email : ("admin@" + (currentTenant || "skillivio") + ".co.za")}

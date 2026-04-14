@@ -85,6 +85,64 @@ function LearnerPortal({ ...props }) {
             reader.readAsText(file);
         }
     };
+
+
+    // 1. Build course-wise stats
+    const courseStats = lessonStatus.reduce((acc, status) => {
+        const enrollment = status.enrollId;
+        const learner = enrollment?.learnerId;
+        const course = enrollment?.courseId;
+
+        // Only for current user
+        if (learner?.userId === currentUser._id) {
+            const courseId = course?._id?.toString();
+            if (!courseId) return acc;
+
+            // Initialize course if not exists
+            if (!acc[courseId]) {
+                const totalLessons =
+                    course?.modules?.flatMap((module) =>
+                        module.lessons.map((l) => l._id)
+                    ).length || 0;
+
+                acc[courseId] = {
+                    courseId,
+                    courseName: course?.title || "Untitled",
+                    totalLessonsInCourse: totalLessons,
+                    lessonsStartedOrFinished: 0,
+                    progressPercentage: 0,
+                };
+            }
+
+            // Count lessons with status
+            acc[courseId].lessonsStartedOrFinished += 1;
+        }
+
+        return acc;
+    }, {});
+
+    // 2. Convert to array + calculate progress %
+    const finalProgress = Object.values(courseStats).map((course) => {
+        const progress =
+            course.totalLessonsInCourse > 0
+                ? Math.round(
+                    (course.lessonsStartedOrFinished /
+                        course.totalLessonsInCourse) *
+                    100
+                )
+                : 0;
+
+        return {
+            ...course,
+            progressPercentage: progress,
+        };
+    });
+
+    // 3. Calculate average progress
+    const avgProgress = Math.round(
+        finalProgress.reduce((sum, c) => sum + c.progressPercentage, 0) /
+        Math.max(finalProgress.length, 1)
+    );
     return (
         <div style={{ display: "flex", ...css.page }}>
             <style>{GLOBAL_CSS}</style>
@@ -184,7 +242,7 @@ function LearnerPortal({ ...props }) {
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
                             <StatCard icon="📚" value={myCourses.length} label="Enrolled" color={p} />
                             <StatCard icon="🏆" value={myCourses.filter(function (c) { return c.progress === 100; }).length} label="Completed" color="#10B981" />
-                            <StatCard icon="📈" value={Math.round(myCourses.reduce(function (s, c) { return s + c.courseId.progress; }, 0) / Math.max(myCourses.length, 1)) + "%"} label="Avg Progress" color={a} />
+                            <StatCard icon="📈" value={avgProgress + "%"} label="Avg Progress" color={a} />
                             <StatCard icon="⭐" value="18" label="Credits Earned" color="#8B5CF6" />
                         </div>
                         <div style={{ ...css.card, marginBottom: 16 }}>
@@ -224,6 +282,7 @@ function LearnerPortal({ ...props }) {
                                 }, {});
 
                                 const finalProgress = Object.values(courseStats);
+
 
                                 return (
                                     <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 0", borderBottom: "1px solid #f8fafc" }}>

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
 import contactUs from "@/app/api/model/contactUs";
+import { sendContactUsEmail } from "@/lib/nodemailer";
 
 export async function GET() {
   try {
@@ -21,11 +22,24 @@ export async function POST(req) {
   await dbConnect();
   try {
     const data = await req.json();
-    console.log(data);
     const contactus = await contactUs.create(data);
+
+    let emailSent = false;
+    let emailError = null;
+
+    try {
+      await sendContactUsEmail(data);
+      emailSent = true;
+    } catch (err) {
+      emailError = err.message;
+      console.error("Contact email error:", err);
+    }
+
     return NextResponse.json({
       ...contactus.toObject(),
       id: contactus._id.toString(),
+      emailSent,
+      emailError,
     });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

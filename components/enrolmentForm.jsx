@@ -102,21 +102,21 @@ function EnrolmentForm({ ...props }) {
     }, [AdminCourse, selectedCourse]);
 
 
-useEffect(() => {
-    // Check if a learner is selected
-    if (selectedLearner) {
-        // Find the learner's data from tierLearner
-        const selectedLearnerData = tierLearner.find((learner) => learner._id === selectedLearner);
+    useEffect(() => {
+        // Check if a learner is selected
+        if (selectedLearner) {
+            // Find the learner's data from tierLearner
+            const selectedLearnerData = tierLearner.find((learner) => learner._id === selectedLearner);
 
-        // Update secB.fullName whenever selectedLearner changes
-        if (selectedLearnerData) {
-            setSecB((prev) => ({
-                ...prev,
-                fullName: selectedLearnerData.userId.name,  // Set the name based on the selected learner
-            }));
+            // Update secB.fullName whenever selectedLearner changes
+            if (selectedLearnerData) {
+                setSecB((prev) => ({
+                    ...prev,
+                    fullName: selectedLearnerData.userId.name,  // Set the name based on the selected learner
+                }));
+            }
         }
-    }
-}, [selectedLearner, tierLearner]); // Dependency on selectedLearner and tierLearner
+    }, [selectedLearner, tierLearner]); // Dependency on selectedLearner and tierLearner
 
     useEffect(() => {
         if (selectedCourseDetail) {
@@ -186,12 +186,12 @@ useEffect(() => {
         const selectedLearnerData = Learners.find((learner) => learner._id === selectedLearner);
 
 
-        // If the learner is not found, show an error
-        if (!selectedLearnerData) {
-            notify("Selected learner not found", "error");
-            setSubmitting(false);
-            return;
-        }
+        // // If the learner is not found, show an error
+        // if (!selectedLearnerData) {
+        //     notify("Selected learner not found", "error");
+        //     setSubmitting(false);
+        //     return;
+        // }
 
         // Construct the enrollment record
         const enrollmentRecord = {

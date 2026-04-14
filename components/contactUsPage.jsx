@@ -72,16 +72,25 @@ function ContactUsPage({ ...props }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (validateForm()) {
+            try {
+                const result = await dispatch(createcontactUs(formData)).unwrap();
+                setFormData({
+                    firstName: "", lastName: "", businessEmail: "", phoneNumber: "",
+                    company: "", noOfLMs: "", jobTitle: "", country: "South Africa",
+                    industry: "", status: "pending"
+                });
+                setErrors({});
 
-            dispatch(createcontactUs(formData));
-            setFormData({
-                firstName: "", lastName: "", businessEmail: "", phoneNumber: "",
-                company: "", noOfLMs: "", jobTitle: "", country: "South Africa",
-                industry: "", status: "pending"
-            });
-            setErrors({})
-            notify("successfully send...")
-            router.push("https://calendly.com/marylin-skillivio/30min")
+                if (result.emailSent) {
+                    notify("Message sent successfully.");
+                } else {
+                    notify(result.emailError || "Message saved, but email delivery failed.");
+                }
+
+                // router.push("https://calendly.com/marylin-skillivio/30min");
+            } catch (err) {
+                notify(err?.error || "Failed to send your message.");
+            }
         }
     };
     return (
@@ -272,7 +281,7 @@ function ContactUsPage({ ...props }) {
                         //     setShowCalendar(true);
                         // }}
                         >
-                            Send Request
+                            Submit
                         </button>
                         {/* <div>
                             {showCalendar && (

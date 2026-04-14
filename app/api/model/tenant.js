@@ -1,40 +1,115 @@
 import mongoose from "mongoose";
 
-const tenantsSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  slug: { type: String, required: true },
-  primary: { type: String, required: true },
-  secondary: { type: String, required: true },
-  accent: { type: String, required: true },
-  logo: { type: String, required: true },
-  tagline: { type: String, required: true },
+const tenantsSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
 
-  // Group general settings inside 'general'
-  general: {
-    supportEmail: { type: String, required: true },
-    timeZone: { type: String, required: true },
-    currency: { type: String, required: true },
+    slug: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+      unique: true,
+      index: true
+    },
+
+    domain: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+      unique: true,
+      index: true
+    },
+
+    email: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+      index: true
+    },
+
+    phone: {
+      type: String,
+      required: true
+    },
+
+    logo: {
+      type: String
+    },
+
+    tagline: {
+      type: String
+    },
+
+    // Branding
+    branding: {
+      primary: { type: String, required: true },
+      secondary: { type: String, required: true },
+      accent: { type: String, required: true },
+      color: { type: String }
+    },
+
+    // ⚙️ General Settings
+    general: {
+      supportEmail: { type: String, required: true },
+      timeZone: { type: String, required: true },
+      currency: { type: String, required: true }
+    },
+
+    // 🏛 QCTO Config
+    QCTOConfig: {
+      accreditationNumber: { type: String },
+      setaAffiliation: { type: String },
+      qctoAudit: { type: Boolean, default: true },
+      autoGenerateQCTO: { type: Boolean, default: true }
+    },
+
+    // 💼 Business Info
+    tier: {
+      type: String,
+      enum: ["free", "pro", "enterprise"],
+      default: "free"
+    },
+
+    mrr: {
+      type: Number,
+      default: 0
+    },
+
+    qctoNo: {
+      type: String
+    },
+
+    status: {
+      type: String,
+      enum: ["Pending", "Active", "Suspended"],
+      default: "Pending",
+      index: true
+    },
+
+    setupDate: {
+      type: Date,
+      default: Date.now
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true
+    }
   },
+  { timestamps: true }
+);
 
-  QCTOConfig: {
-    accreditationNumber: { type: String, required: true },
-    setaAffiliation: { type: String, required: true },
-    qctoAudit: { type: Boolean, default: true },
-    autoGenerateQCTO: { type: Boolean, default: true },
-  },
 
-  tier: { type: String, required: true },
-  contact: { type: String, required: true },
-  domain: { type: String, required: true },
-  email: { type: String, required: true },
-  learners: { type: Number, required: true },// take as FK of learners
-  mrr: { type: Number, required: true },
-  color: { type: String, required: true },
-  phone: { type: String, required: true },
-  qctoNo: { type: String, required: true },
-  status: { type: String, default: "Pending" },
-  setupDate: { type: String, default: new Date().toISOString().split("T")[0] }
+// Indexes are declared natively within the schema properties above.
 
-}, { timestamps: true });
 
-export default mongoose.models.tenants || mongoose.model('tenants', tenantsSchema);
+// Export Model
+export default mongoose.models.tenants ||
+  mongoose.model("tenants", tenantsSchema);

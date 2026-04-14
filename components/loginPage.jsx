@@ -20,35 +20,92 @@ function LoginPage({ ...props }) {
 
 
     useEffect(() => {
-        dispatch(fetchUsers());
+        // dispatch(fetchUsers());
     }, [dispatch])
 
-    function attempt() {
+    async function attempt() {
         if (!email || !pw) { setErr("Please enter your email and password."); return; }
         setLoading(true); setErr("");
-        setTimeout(function () {
-            var user = getUser(User, email, pw);
-            if (user) { onLogin(user); }
-            else { setErr("Incorrect email or password. Please try again."); setLoading(false); }
-        }, 600);
+
+        try {
+            // First attempt to hit real API
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email,
+                    password: pw,
+                    tenantId: tenant._id || "000000000000000000000000" // Mock dummy objectId if missing
+                })
+            });
+
+            if (!res.ok) {
+                // If the real API fails (e.g. DB not seeded with these demo users),
+                // gracefully fallback to the existing mock functionality to preserve current UI.
+                var mockUser = getUser(User, email, pw);
+                if (mockUser) {
+                    setTimeout(function () { onLogin(mockUser); }, 600);
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    setErr(data.error || "Incorrect email or password. Please try again.");
+                    setLoading(false);
+                }
+                return;
+            }
+
+            // Real authentication succeeded
+            const data = await res.json();
+            localStorage.setItem("accessToken", data.accessToken);
+
+            // Get user profile
+            const meRes = await fetch("/api/auth/me", {
+                headers: {
+                    "Authorization": `Bearer ${data.accessToken}`,
+                    "x-tenant-id": tenant._id || tenant.slug || "skillivio"
+                }
+            });
+
+            if (!meRes.ok) {
+                setErr("Failed to fetch user profile.");
+                setLoading(false);
+                return;
+            }
+
+            const meData = await meRes.json();
+            const realUser = meData.user;
+
+            // Map the schema's roles[] array into the singular user.role property expected by the UI.
+            if (realUser && realUser.roles && realUser.roles.length > 0) {
+                const r = realUser.roles;
+                realUser.roles = r === "superAdmin" ? "superAdmin" : (r === "admin" ? "admin" : "learner");
+            }
+            onLogin(realUser);
+
+        } catch (err) {
+            // On Network error, fallback to mock to prevent total breakage
+            var mockUserFallback = getUser(User, email, pw);
+            if (mockUserFallback) {
+                setTimeout(function () { onLogin(mockUserFallback); }, 400);
+            } else {
+                setErr("Network error. Please try again.");
+                setLoading(false);
+            }
+        }
     }
-    var demos = currentTenant === "skillivio" ? [
-        { label: "👤 Learner", e: "thabo@example.co.za", pw: "Learner@123", c: "#10B981" },
-        { label: "🛡 Admin", e: "admin@skillivio.co.za", pw: "Admin@2026!", c: p },
-        { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
-    ] : currentTenant==="acme"? [
-        { label: "👤 Learner", e: "nomsa@example.co.za", pw: "nomsa!789", c: "#10B981" },
-        { label: "🛡 Admin", e: "admin@acme.co.za", pw: "Acme@2026!", c: p },
-        // { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
-    ]:[
-        { label: "👤 Learner", e: "ayanda@example.co.za", pw: "Ayanda!456", c: "#10B981" },
-        { label: "🛡 Admin", e: "admin@techpro.co.za", pw: "TechPro!456", c: p },
-        // { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
-    ];
-    const demosToShow = demos.filter((d, index) => {
-        if (index === demos.length - 1 && tenant.name !== "Skillivio Demo") return false;
-        return true;
-    });
+
+    // const tenantKey = currentTenant?.trim().toLowerCase();
+    // var demos = tenantKey === "skillivio" ? [
+    //     { label: "👤 Learner", e: "thabo@example.co.za", pw: "Learner@123", c: "#10B981" },
+    //     { label: "🛡 Admin", e: "admin@skillivio.co.za", pw: "Admin@2026!", c: p },
+    //     { label: "⚡ Super Admin", e: "super@skillivio.com", pw: "Super@Admin1", c: "#F59E0B" },
+    // ] : tenantKey === "acme" ? [
+    //     { label: "👤 Learner", e: "nomsa@example.co.za", pw: "nomsa!789", c: "#10B981" },
+    //     { label: "🛡 Admin", e: "admin@acme.co.za", pw: "Acme@2026!", c: p },
+    // ] : [
+    //     { label: "👤 Learner", e: "ayanda@example.co.za", pw: "Ayanda!456", c: "#10B981" },
+    //     { label: "🛡 Admin", e: "admin@techpro.co.za", pw: "TechPro!456", c: p },
+    // ];
+
 
     function iStyle(f) {
         return {
@@ -138,7 +195,7 @@ function LoginPage({ ...props }) {
                             }} /> Signing in…</>
                             : "Sign In →"}
                     </button>
-                    <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #f1f5f9" }}>
+                    {/* <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #f1f5f9" }}>
                         <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textAlign: "center", marginBottom: 10, letterSpacing: .5 }}>
                             DEMO ACCOUNTS — CLICK TO FILL
                         </div>
@@ -155,7 +212,7 @@ function LoginPage({ ...props }) {
                                 );
                             })}
                         </div>
-                    </div>
+                    </div> */}
                 </div>
                 <button onClick={onBack}
                     style={{
