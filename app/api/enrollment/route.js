@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
 import enrollment from "@/app/api/model/enrollment";
 import learners from "@/app/api/model/learner";
+import "@/app/api/model/course";
+import "@/app/api/model/module";
+import "@/app/api/model/lesson";
 
 export async function GET() {
     try {

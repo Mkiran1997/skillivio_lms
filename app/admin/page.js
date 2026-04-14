@@ -33,6 +33,7 @@ function Admin() {
     const [selectConditionAndPolicy, setSelectConditionAndPolicy] = useState("");
     const [isClient, setIsClient] = useState(false);
 
+
     useEffect(() => {
         if (typeof window !== 'undefined') {
             // Now we know we're in the browser
@@ -88,19 +89,26 @@ function Admin() {
 
     function loginUser(user) {
         setCurrentUser(user);
-        setUserRole(user.role);
+        setUserRole(user.roles);
         // if (TENANTS[user.tenant]) setCurrentTenant(user.tenant);
         setView(
-            user.role === "admin"
+            user.roles === "admin"
                 ? "admin"
-                : user.role === "superAdmin"
+                : user.roles === "superAdmin"
                     ? "superadmin"
                     : "learner",
         );
         notify("Welcome back, " + user.name.split(" ")[0] + "!");
     }
 
-    function logout() {
+
+    async function logout() {
+        try {
+            await fetch("/api/auth/logout", { method: "POST", headers: { "Content-Length": "0" } });
+            localStorage.removeItem("accessToken");
+        } catch (e) {
+            console.error("Logout API failed", e);
+        }
         setView("landing");
         setUserRole(null);
         setCurrentUser(null);

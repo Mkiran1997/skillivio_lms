@@ -6,7 +6,7 @@ const learnersSchema = new mongoose.Schema(
       ref: "users",
       required: true,
     },
-    cohort: { type: String, required: true },
+    cohort: { type: String, default: "" },
   },
   { timestamps: true },
 );

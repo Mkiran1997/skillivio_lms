@@ -6,7 +6,7 @@ export async function PATCH(req, { params }) {
     try {
         await dbConnect();
 
-         const paramsRes = await params;
+        const paramsRes = await params;
         const { status } = await req.json();
 
         const course = await Course.findByIdAndUpdate(

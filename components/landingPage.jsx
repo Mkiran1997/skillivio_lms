@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { GLOBAL_CSS } from '../app/globalCss';
 import { TENANTS } from "../app/mockData";
 import Toast from './toast';
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 
 function LandingPage({ ...props }) {
@@ -10,6 +10,7 @@ function LandingPage({ ...props }) {
     const { p, s, tenant, setView, currentTenant, setCurrentTenant, notification, css } = props;
     const pathname = usePathname();
     const isAdmin = pathname === "/admin";
+    const router = useRouter();
 
 
     return (
@@ -111,6 +112,16 @@ function LandingPage({ ...props }) {
                     <div style={{ display: "flex", gap: 14 }}>
                         {/* <button onClick={function () { setView("login"); }} style={{ ...css.btn(p), padding: "14px 28px", fontSize: 16 }}>Launch Platform →</button> */}
                         <button onClick={function () { setView("contact"); }} style={{ ...css?.btn(p), padding: "14px 28px", fontSize: 16 }}>Contact Us →</button>
+                        {
+                            isAdmin && (
+                                <button onClick={function () {
+                                    router.push("https://calendly.com/marylin-skillivio/30min");
+                                }}
+                                    style={{ ...css?.btn(p), padding: "14px 28px", fontSize: 16 }}>
+                                    Book Demo →
+                                </button>
+                            )
+                        }
                     </div>
                     <div style={{ display: "flex", gap: 32, marginTop: 48 }}>
                         {[["500+", "SDPs Trust Us"], ["50K+", "Learners Served"], ["QCTO", "Aligned"]].map(function (pair) {
@@ -121,35 +132,41 @@ function LandingPage({ ...props }) {
                         <div style={{ color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 12, textTransform: "uppercase", letterSpacing: "1px", paddingTop: 15 }}>
                             Connect with us
                         </div>
+
                         <div style={{ display: "flex", gap: 12 }}>
                             {[
                                 { icon: "fab fa-facebook-f", url: "https://www.facebook.com/share/18YVwWrqoS/?mibextid=wwXIfr" },
                                 { icon: "fab fa-linkedin-in", url: "https://www.linkedin.com/company/skillivio/" },
-                                { icon: "fab fa-instagram", url: "https://www.instagram.com/skillivio_?igsh=bWlkcG5oODByZXdx&wa_status_inline=true" }
-                            ].map((social, index) => (
-                                <a key={index}
-                                    href={social.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="social-icon-button"
-                                    style={{
-                                        width: 42,
-                                        height: 42,
-                                        borderRadius: 10,
-                                        background: "rgba(255,255,255,0.05)",
-                                        border: `1px solid ${p}`,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: p,
-                                        fontSize: 18,
-                                        textDecoration: "none",
-                                        transition: "all 0.3s ease",
-                                    }}
-                                >
-                                    <i className={social.icon}></i>
-                                </a>
-                            ))}
+                                { icon: "fab fa-instagram", url: "https://www.instagram.com/skillivio_" },
+                                { icon: "fas fa-envelope", url: "https://mail.google.com/mail/?view=cm&to=info@skillivio.com" }
+                            ].map((social, index) => {
+                                const isMail = social.url.startsWith("mailto:");
+
+                                return (
+                                    <a
+                                        key={index}
+                                        href={social.url}
+                                        {...(!isMail && { target: "_blank", rel: "noopener noreferrer" })}
+                                        className="social-icon-button"
+                                        style={{
+                                            width: 42,
+                                            height: 42,
+                                            borderRadius: 10,
+                                            background: "rgba(255,255,255,0.05)",
+                                            border: `1px solid ${p}`,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            color: p,
+                                            fontSize: 18,
+                                            textDecoration: "none",
+                                            transition: "all 0.3s ease",
+                                        }}
+                                    >
+                                        <i className={social.icon}></i>
+                                    </a>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
