@@ -177,7 +177,7 @@ function LandingPage({ ...props }) {
                         { icon: "📊", t: "Advanced Analytics", d: "Learner progress & assessment reports" },
                         { icon: "🏆", t: "Digital Certificates", d: "Verifiable with proof links" },
                         { icon: "🤖", t: "AI Course Builder", d: "Generate outlines & quizzes" },
-                        // { icon: "⚡", t: "PayShap & EFT", d: "Instant PayShap + EFT — zero transaction fees" },
+                        { icon: "⚡", t: "EFT", d: "Instant  EFT — zero transaction fees" },
                     ].map(function (f) {
                         return (
                             <div key={f.t} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "18px" }}>
