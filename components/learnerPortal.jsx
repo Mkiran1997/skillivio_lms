@@ -46,7 +46,7 @@ function LearnerPortal({ ...props }) {
         { id: "browse", icon: "🔍", label: "Browse Courses" },
         { id: "enrolments", icon: "📋", label: "My Enrolments", badge: userEnrollment.length || undefined },
         { id: "certificates", icon: "🏆", label: "Certificates", badge: myCourses.length === 0 ? "0" : "1" },
-        // { id: "community", icon: "💬", label: "Community" },
+        { id: "community", icon: "💬", label: "Community" },
     ]
 
 
@@ -370,7 +370,7 @@ function LearnerPortal({ ...props }) {
                                                         {course.free ? "FREE" : "R" + course.price}
                                                     </div>
                                                     {!course.free && (
-                                                        <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}> EFT</div>
+                                                        <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>PayShap · EFT</div>
                                                     )}
                                                 </div>
                                                 <button
@@ -595,7 +595,7 @@ function LearnerPortal({ ...props }) {
                     </div>
                 )}
 
-                {/* {tab === "community" && (
+                {tab === "community" && (
                     <div className="fade">
                         <h1 style={{ ...css.h1, marginBottom: 24 }}>Community</h1>
                         <div style={{ ...css.card, textAlign: "center", padding: "60px" }}>
@@ -604,7 +604,7 @@ function LearnerPortal({ ...props }) {
                             <p style={{ color: "#64748b", marginTop: 8 }}>Connect with fellow learners and facilitators</p>
                         </div>
                     </div>
-                )} */}
+                )}
             </div>
 
             {enrollingCourse && (

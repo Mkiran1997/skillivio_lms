@@ -619,9 +619,9 @@ function EnrolmentForm({ ...props }) {
                                         <p style={{ fontSize: 13, color: "#475569", marginBottom: 14 }}>
                                             Select your preferred payment method. Your enrolment will be activated once payment is confirmed.
                                         </p>
-                                        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                                             {/* PayShap */}
-                                            {/* <div style={{ background: "#f0f9ff", borderRadius: 10, padding: "14px", border: "2px solid #0ea5e940", cursor: "pointer" }}
+                                            <div style={{ background: "#f0f9ff", borderRadius: 10, padding: "14px", border: "2px solid #0ea5e940", cursor: "pointer" }}
                                                 onClick={function () { notify("PayShap details copied to clipboard!"); }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                                                     <span style={{ fontSize: 20 }}>⚡</span>
@@ -636,7 +636,7 @@ function EnrolmentForm({ ...props }) {
                                                     <div>Amount: <strong>R{course.price}</strong></div>
                                                     <div>Reference: <strong>your ID number</strong></div>
                                                 </div>
-                                            </div> */}
+                                            </div>
                                             {/* EFT */}
                                             <div style={{ background: "#FEF9C3", borderRadius: 10, padding: "14px", border: "2px solid #FDE68A", cursor: "pointer" }}
                                                 onClick={function () { notify("EFT banking details sent to your email!"); }}>

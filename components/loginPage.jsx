@@ -7,7 +7,7 @@ import { current } from "@reduxjs/toolkit";
 
 
 function LoginPage({ ...props }) {
-    var onLogin = props.onLogin, onBack = props.onBack, tenant = props.tenant, p = props.p, s = props.s, currentTenant = props.currentTenant, setView=props.setView;
+    var onLogin = props.onLogin, onBack = props.onBack, tenant = props.tenant, p = props.p, s = props.s, currentTenant = props.currentTenant;
     var [email, setEmail] = useState("");
     var [pw, setPw] = useState("");
     var [showPw, setShowPw] = useState(false);
@@ -123,21 +123,20 @@ function LoginPage({ ...props }) {
             <style>{GLOBAL_CSS}</style>
             <div style={{ width: "100%", maxWidth: 420 }}>
                 <div style={{ textAlign: "center", marginBottom: 24, animation: "fadeIn 0.4s ease" }}>
-
-
                     {
                         currentTenant === "skillivio" ?
-                            <img src='/logo/skillivioLogo.jpeg' alt={tenant.logo} style={{
+                            <img src='/logo/skillivioLogo.jpeg' alt='skillivio' style={{
                                 width: 64, height: 64, background: p, borderRadius: 18, display: "flex", alignItems: "center",
                                 justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", margin: "0 auto 14px",
                                 boxShadow: "0 8px 24px " + p + "44"
                             }} />
-                            : <img src={tenant?.logo} alt={tenant?.name[0]} style={{
-                                width: 64, height: 64, background: p, borderRadius: 18, display: "flex", alignItems: "center",
-                                justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", margin: "0 auto 14px",
-                                boxShadow: "0 8px 24px " + p + "44"
-                            }} />
+                            :
 
+                            <div style={{
+                                width: 64, height: 64, background: p, borderRadius: 18, display: "flex", alignItems: "center",
+                                justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", margin: "0 auto 14px",
+                                boxShadow: "0 8px 24px " + p + "44"
+                            }}>{tenant.logo}</div>
                     }
                     <div style={{ color: "#fff", fontWeight: 800, fontSize: 22 }}>{tenant.name}</div>
                     <div style={{ color: p, fontSize: 12, marginTop: 3 }}>{tenant.tagline}</div>
@@ -196,21 +195,6 @@ function LoginPage({ ...props }) {
                             }} /> Signing in…</>
                             : "Sign In →"}
                     </button>
-                    <div style={{ marginTop: 16, textAlign: "center" }}>
-                        <span style={{ fontSize: 13, color: "#64748b" }}>
-                            Don’t have an account?{" "}
-                            <span
-                                onClick={() => setView("register")}
-                                style={{
-                                    color: p,
-                                    fontWeight: 700,
-                                    cursor: "pointer"
-                                }}
-                            >
-                                Sign up
-                            </span>
-                        </span>
-                    </div>
                     {/* <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #f1f5f9" }}>
                         <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textAlign: "center", marginBottom: 10, letterSpacing: .5 }}>
                             DEMO ACCOUNTS — CLICK TO FILL
@@ -237,7 +221,6 @@ function LoginPage({ ...props }) {
                     }}>
                     ← Back to Landing
                 </button>
-
             </div>
         </div>
     );
