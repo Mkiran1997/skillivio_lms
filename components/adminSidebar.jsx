@@ -11,17 +11,15 @@ function AdminSidebar({ ...props }) {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {
             currentTenant === "skillivio" ?
-              <img src='/logo/skillivioLogo.jpeg' alt='skillivio' style={{
+              <img src='/logo/skillivioLogo.jpeg' alt={tenant.logo} style={{
                 width: 34, height: 34, background: p, borderRadius: 9, display: "flex", alignItems: "center",
                 justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff"
               }} />
-              :
-              <div style={{
+              : <img src={tenant?.logo} alt={tenant?.name[0]} style={{
                 width: 34, height: 34, background: p, borderRadius: 9, display: "flex", alignItems: "center",
                 justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff"
-              }}>
-                {tenant && tenant.logo}
-              </div>
+              }} />
+
           }
           <div>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{tenant && tenant.name}</div>

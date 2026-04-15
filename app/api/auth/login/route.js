@@ -17,7 +17,7 @@ export async function POST(req) {
       return handleAuthError("Missing fields", 400);
     }
 
-    const user = await User.findOne({ email, tenantId });
+    const user = await User.findOne({ email, tenantId }).select("+password");
     if (!user) {
       return handleAuthError("Invalid credentials", 401);
     }
