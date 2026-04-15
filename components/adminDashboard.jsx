@@ -1969,8 +1969,13 @@ function AdminDashboard({ ...props }) {
                           fontWeight: 700,
                           flexShrink: 0,
                         }}
-                      >
-                        {l.userId.name.split(" ")[0][0].toUpperCase() + l.userId.name.split(" ")[1][0].toUpperCase()}
+                      > {l?.userId?.name
+                        ? l.userId.name.split(" ")
+                          .slice(0, 2)
+                          .map(name => name[0]?.toUpperCase())
+                          .filter(Boolean)
+                          .join('')
+                        : ""}
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600 }}>
@@ -2326,8 +2331,13 @@ function AdminDashboard({ ...props }) {
                                 fontWeight: 700,
                               }}
                             >
-                              {l.userId.name.split(" ")[0][0].toUpperCase() + l.userId.name.split(" ")[1][0].toUpperCase()}
-                            </div>
+                              {l?.userId?.name
+                                ? l.userId.name.split(" ")
+                                  .slice(0, 2)
+                                  .map(name => name[0]?.toUpperCase())
+                                  .filter(Boolean)
+                                  .join('')
+                                : ""}                            </div>
                             <div style={{ fontWeight: 600, fontSize: 13 }}>
                               {l.userId.name}
                             </div>
