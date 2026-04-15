@@ -55,14 +55,14 @@ const tenantsSchema = new mongoose.Schema(
       color: { type: String }
     },
 
-    // ⚙️ General Settings
+    // General Settings
     general: {
       supportEmail: { type: String, required: true },
       timeZone: { type: String, required: true },
       currency: { type: String, required: true }
     },
 
-    // 🏛 QCTO Config
+    // QCTO Config
     QCTOConfig: {
       accreditationNumber: { type: String },
       setaAffiliation: { type: String },
@@ -70,7 +70,7 @@ const tenantsSchema = new mongoose.Schema(
       autoGenerateQCTO: { type: Boolean, default: true }
     },
 
-    // 💼 Business Info
+    // Business Info
     tier: {
       type: String,
       enum: ["free", "pro", "enterprise"],

@@ -214,7 +214,7 @@ function SkillivioSuperAdmin({ ...props }) {
                         <div style={{ background: "#f0fdf4", borderRadius: 10, padding: "16px 18px", border: "1px solid #86efac", marginBottom: 20 }}>
                             <div style={{ fontWeight: 700, fontSize: 13, color: "#166534", marginBottom: 10 }}>Payment Details</div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                {[["Bank", "First National Bank (FNB)"], ["Account Name", "Skillivio Digital Learning Solutions (Pty) Ltd"], ["Account No", "62 0000 0000"], ["Branch Code", "250655"], ["PayShap ID", "@skillivio"], ["Reference", t.slug + "-" + new Date().getFullYear() + "-" + (new Date().getMonth() + 1)]].map(function (pair) {
+                                {[["Bank", "First National Bank (FNB)"], ["Account Name", "Skillivio Digital Learning Solutions (Pty) Ltd"], ["Account No", "62 0000 0000"], ["Branch Code", "250655"], /*["PayShap ID", "@skillivio"],*/ ["Reference", t.slug + "-" + new Date().getFullYear() + "-" + (new Date().getMonth() + 1)]].map(function (pair) {
                                     return (
                                         <div key={pair[0]} style={{ fontSize: 12 }}>
                                             <span style={{ color: "#64748b" }}>{pair[0]}: </span>
@@ -479,7 +479,6 @@ function SkillivioSuperAdmin({ ...props }) {
                                     ["Account No", "62 0000 0000"],
                                     ["Branch Code", "250655 (Universal)"],
                                     ["Account Type", "Business Cheque"],
-                                    ["PayShap ID", "@skillivio"],
                                 ].map(function (pair) {
                                     return (
                                         <div key={pair[0]} style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 14px" }}>
@@ -489,8 +488,8 @@ function SkillivioSuperAdmin({ ...props }) {
                                     );
                                 })}
                             </div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                                <div style={{ background: "#f0f9ff", borderRadius: 8, padding: "12px 16px", border: "1px solid #bae6fd" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+                                {/* <div style={{ background: "#f0f9ff", borderRadius: 8, padding: "12px 16px", border: "1px solid #bae6fd" }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                                         <span style={{ fontSize: 18 }}>⚡</span>
                                         <span style={{ fontWeight: 700, fontSize: 14, color: "#0369a1" }}>PayShap (Preferred)</span>
@@ -498,7 +497,7 @@ function SkillivioSuperAdmin({ ...props }) {
                                     <div style={{ fontSize: 12, color: "#0369a1", lineHeight: 1.7 }}>
                                         Instant real-time clearing. SDP sends monthly retainer from any SA bank using PayShap ID @skillivio with their tenant reference as payment description.
                                     </div>
-                                </div>
+                                </div> */}
                                 <div style={{ background: "#FEF9C3", borderRadius: 8, padding: "12px 16px", border: "1px solid #FDE68A" }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                                         <span style={{ fontSize: 18 }}>🏦</span>
@@ -534,7 +533,7 @@ function SkillivioSuperAdmin({ ...props }) {
                     <div className="fade">
                         <h1 style={{ fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "0 0 24px" }}>Platform Settings</h1>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                            {[{ title: "CDN & DNS", icon: "🌐", desc: "Wildcard DNS *.skillivio.com, auto-SSL via Cloudflare" }, { title: "Email (SendGrid)", icon: "📧", desc: "Transactional email from client domains" }, { title: "Video (Mux)", icon: "🎬", desc: "Adaptive video transcoding per tenant" }, { title: "Payments (PayShap & EFT)", icon: "⚡", desc: "PayShap real-time clearing + EFT bank deposits. Zero transaction fees." }, { title: "AI (OpenAI)", icon: "🤖", desc: "Course creator, quiz generator, student chatbot" }, { title: "SCORM Runtime", icon: "📦", desc: "SCORM 1.2 and 2004 package hosting" }].map(function (s) {
+                            {[{ title: "CDN & DNS", icon: "🌐", desc: "Wildcard DNS *.skillivio.com, auto-SSL via Cloudflare" }, { title: "Email (SendGrid)", icon: "📧", desc: "Transactional email from client domains" }, { title: "Video (Mux)", icon: "🎬", desc: "Adaptive video transcoding per tenant" }, /*{ title: "Payments (PayShap & EFT)", icon: "⚡", desc: "PayShap real-time clearing + EFT bank deposits. Zero transaction fees." },*/ { title: "AI (OpenAI)", icon: "🤖", desc: "Course creator, quiz generator, student chatbot" }, { title: "SCORM Runtime", icon: "📦", desc: "SCORM 1.2 and 2004 package hosting" }].map(function (s) {
                                 return (
                                     <div key={s.title} style={{ background: "#fff", borderRadius: 12, padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.07)", display: "flex", gap: 14 }}>
                                         <div style={{ fontSize: 28 }}>{s.icon}</div>

@@ -208,7 +208,7 @@ function AdminDashboard({ ...props }) {
     { key: "accountNo", label: "Account No" },
     { key: "branchCode", label: "Branch Code" },
     { key: "accountType", label: "Account Type" },
-    { key: "payShapId", label: "PayShap ID" },
+    // { key: "payShapId", label: "PayShap ID" },
   ];
 
   useEffect(() => {
@@ -963,7 +963,7 @@ function AdminDashboard({ ...props }) {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gridTemplateColumns: "1fr 1fr",
                       gap: 10,
                     }}
                   >
@@ -1009,7 +1009,7 @@ function AdminDashboard({ ...props }) {
                     >
                       🤖 AI Outline
                     </button>
-                    <button
+                    {/* <button
                       onClick={function () {
                         notify("SCORM package importer opened");
                       }}
@@ -1020,7 +1020,7 @@ function AdminDashboard({ ...props }) {
                       }}
                     >
                       📦 SCORM Import
-                    </button>
+                    </button> */}
                     <button
                       onClick={function () {
                         var copy = {
@@ -1856,7 +1856,7 @@ function AdminDashboard({ ...props }) {
                 {AdminCourse.slice(0, 4).map(function (c) {
                   return (
                     <div
-                      key={c._id}
+                      key={c.id}
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -2999,7 +2999,7 @@ function AdminDashboard({ ...props }) {
           <div className="fade">
             <h1 style={{ ...css.h1, marginBottom: 4 }}>Payments & Orders</h1>
             <p style={{ color: "#64748b", fontSize: 14, marginBottom: 20 }}>
-              South African payment methods — PayShap instant transfer and EFT
+              South African payment methods —{/* PayShap instant transfer and */}EFT
               bank deposit. Zero transaction fees.
             </p>
 
@@ -3067,7 +3067,7 @@ function AdminDashboard({ ...props }) {
                     </span>
                   </div>
                   <span style={{ fontSize: 12, color: "#94a3b8" }}>
-                    Learners make payment to this account for EFT and PayShap
+                    Learners make payment to this account for EFT {/*and PayShap*/}
                   </span>
                 </div>
 
@@ -3171,13 +3171,13 @@ function AdminDashboard({ ...props }) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: "1fr",
                 gap: 16,
                 marginBottom: 16,
               }}
             >
               {/* PayShap */}
-              <div style={{ ...css.card, border: "2px solid #6366F130" }}>
+              {/* <div style={{ ...css.card, border: "2px solid #6366F130" }}>
                 <div
                   style={{
                     display: "flex",
@@ -3265,7 +3265,7 @@ function AdminDashboard({ ...props }) {
                   <div>✓ 24/7 including weekends and holidays</div>
                   <div>✓ No additional fees for learner or SDP</div>
                 </div>
-              </div>
+              </div> */}
 
               {/* EFT */}
               <div style={{ ...css.card, border: "2px solid #F59E0B30" }}>
@@ -3372,14 +3372,14 @@ function AdminDashboard({ ...props }) {
               >
                 <h3 style={css.h3}>Recent Transactions</h3>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <span
+                  {/* <span
                     style={{ ...css.tag("#6366F1"), cursor: "pointer" }}
                     onClick={function () {
                       notify("Filtered: PayShap");
                     }}
                   >
                     ⚡ PayShap
-                  </span>
+                  </span> */}
                   <span
                     style={{ ...css.tag("#F59E0B"), cursor: "pointer" }}
                     onClick={function () {
@@ -3399,14 +3399,14 @@ function AdminDashboard({ ...props }) {
                 </div>
               </div>
               {[
-                {
-                  n: "Priya Sharma",
-                  c: "Advanced JavaScript",
-                  m: "R1,499",
-                  method: "PayShap",
-                  status: "Cleared",
-                  icon: "⚡",
-                },
+                // {
+                //   n: "Priya Sharma",
+                //   c: "Advanced JavaScript",
+                //   m: "R1,499",
+                //   method: "PayShap",
+                //   status: "Cleared",
+                //   icon: "⚡",
+                // },
                 {
                   n: "Thabo Nkosi",
                   c: "Financial Accounting",
@@ -3431,25 +3431,26 @@ function AdminDashboard({ ...props }) {
                   status: "Enrolled",
                   icon: "🎁",
                 },
-                {
-                  n: "Fatima Hendricks",
-                  c: "Project Management",
-                  m: "R1,499",
-                  method: "PayShap",
-                  status: "Cleared",
-                  icon: "⚡",
-                },
+                // {
+                //   n: "Fatima Hendricks",
+                //   c: "Project Management",
+                //   m: "R1,499",
+                //   method: "PayShap",
+                //   status: "Cleared",
+                //   icon: "⚡",
+                // },
               ].map(function (t, i) {
                 var statusColor =
                   t.status === "Cleared" || t.status === "Enrolled"
                     ? "#10B981"
                     : "#F59E0B";
                 var methodColor =
-                  t.method === "PayShap"
+                {/* t.method === "PayShap"
                     ? "#6366F1"
-                    : t.method === "EFT"
-                      ? "#F59E0B"
-                      : "#94a3b8";
+                    : */}
+                t.method === "EFT"
+                  ? "#F59E0B"
+                  : "#94a3b8";
                 return (
                   <div
                     key={i}

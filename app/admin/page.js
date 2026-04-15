@@ -15,6 +15,8 @@ import AdminDashboard from "@/components/adminDashboard";
 import CoursePlayer from "@/components/coursePlayer";
 import AssessmentView from "@/components/assessmentView";
 import CertificateView from "@/components/certificateView";
+import RegisterPage from "@/components/registrationPage";
+import Splash from "@/components/splash";
 
 function Admin() {
     const { Course, loading, error } = useSelector((state) => state.course);
@@ -32,6 +34,60 @@ function Admin() {
     var [editingCourse, setEditingCourse] = useState(null); // null = create mode, course obj = edit mode
     const [selectConditionAndPolicy, setSelectConditionAndPolicy] = useState("");
     const [isClient, setIsClient] = useState(false);
+    const [authChecking, setAuthChecking] = useState(true);
+
+    useEffect(() => {
+        if (!tenant) return; // 🚨 WAIT until tenant is available
+
+        async function restoreSession() {
+            const token = localStorage.getItem("accessToken");
+
+            if (!token) {
+                setAuthChecking(false);
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/auth/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "x-tenant-id": tenant._id || tenant.slug
+                    }
+                });
+
+                if (!res.ok) {
+                    localStorage.removeItem("accessToken");
+                    setAuthChecking(false);
+                    return;
+                }
+
+                const data = await res.json();
+                const user = data.user;
+
+                setCurrentUser(user);
+                setUserRole(user.roles);
+
+                // ✅ THIS decides which page opens after refresh
+                if (user.roles === "admin") {
+                    setView("admin");  // 👉 AdminDashboard
+                } else if (user.roles === "superAdmin") {
+                    setView("superadmin");
+                } else {
+                    setView("learner");
+                }
+
+            } catch (err) {
+                console.error("Session restore error:", err);
+                localStorage.removeItem("accessToken");
+            } finally {
+                setAuthChecking(false);
+            }
+        }
+
+        restoreSession();
+    }, [tenant]);
+
+
 
 
     useEffect(() => {
@@ -101,6 +157,11 @@ function Admin() {
         notify("Welcome back, " + user.name.split(" ")[0] + "!");
     }
 
+    function registerUser(user) {
+
+        notify("Welcome back, " + user.name.split(" ")[0] + "!");
+        setView("login")
+    }
 
     async function logout() {
         try {
@@ -456,6 +517,12 @@ function Admin() {
         logout: logout,
         setView: setView,
     };
+
+    if (authChecking) {
+        return (
+            <Splash/>
+        );
+    }
     if (view === "landing")
         return (
             <LandingPage {...sharedPortalProps} setCurrentTenant={setCurrentTenant} />
@@ -477,10 +544,28 @@ function Admin() {
                 onBack={function () {
                     setView("landing");
                 }}
+                setView={setView}
                 tenant={tenant}
                 p={p}
                 s={s}
                 currentTenant={currentTenant}
+            />
+        );
+
+
+    if (view === "register")
+        return (
+            <RegisterPage
+                onRegister={registerUser}
+                onBack={function () {
+                    setView("landing");
+                }}
+                tenant={tenant}
+                setView={setView}
+                p={p}
+                s={s}
+                currentTenant={currentTenant}
+                notify={notify}
             />
         );
 
