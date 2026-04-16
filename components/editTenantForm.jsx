@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { TIER_DATA } from "../app/mockData";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { TIER_DATA } from "@/utils/mockData";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import { useDispatch } from "react-redux";
 
 function EditTenantForm({ tenant, onSave, onCancel }) {
@@ -21,7 +21,7 @@ function EditTenantForm({ tenant, onSave, onCancel }) {
         seta: tenant.seta || "Services SETA",
         logo: tenant.logo || "",
         setupDate: tenant.setupDate || new Date().toISOString().split("T")[0],
-        status: tenant.status || "Pending"
+        status: tenant.status || "pending"
     });
 
     const [errors, setErrors] = useState({});
@@ -137,7 +137,7 @@ function EditTenantForm({ tenant, onSave, onCancel }) {
                                         Logo
                                     </label>
 
-                                    <div style={{display:"flex",gap:10}}>
+                                    <div style={{ display: "flex", gap: 10 }}>
                                         {/* File input styled like a button */}
                                         <label style={{
                                             display: "inline-block",

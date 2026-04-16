@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import { useDispatch, useSelector } from "react-redux";
 
 function RegisterPage({ ...props }) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import tenant from "@/app/api/model/tenant";
+import tenant from "@/models/tenant";
 
 export async function GET() {
     try {
@@ -14,12 +14,12 @@ export async function GET() {
     }
 }
 
-
 export async function POST(req) {
     await dbConnect();
     try {
         const data = await req.json();
         const tenants = await tenant.create(data);
+
         return NextResponse.json({ ...tenants.toObject(), id: tenants._id.toString() });
     } catch (err) {
         return NextResponse.json({ error: err.message }, { status: 500 });

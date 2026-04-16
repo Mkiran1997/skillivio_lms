@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { exportXLSX, usePagination } from "../app/utility";
-import { ENROLMENT_STORE, LEARNERS } from "../app/mockData";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { exportXLSX, usePagination } from "@/utils/utility";
+import { ENROLMENT_STORE, LEARNERS } from "@/utils/mockData";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import AdminSidebar from "./adminSidebar";
 import StatCard from "./statCard";
 import PaginationBar from "./paginationBar";
@@ -57,12 +57,14 @@ function AdminDashboard({ ...props }) {
     setUploadingForCourse,
   } = props;
 
-  const { Course, loading, error } = useSelector((state) => state.course);
-  const { Learners } = useSelector((state) => state.learners);
-  const { bankdetails } = useSelector((state) => state.bankdetail);
-  const { Enrollment } = useSelector((state) => state.enrollment);
-  const { lessonStatus } = useSelector((state) => state.lessonStatus);
-  const { contactUs } = useSelector((state) => state.contactUs);
+
+
+  const { Course, loading, error } = useSelector((state) => state?.course);
+  const { Learners } = useSelector((state) => state?.learners);
+  const { bankdetails } = useSelector((state) => state?.bankdetail);
+  const { Enrollment } = useSelector((state) => state?.enrollment);
+  const { lessonStatus } = useSelector((state) => state?.lessonStatus);
+  const { contactUs } = useSelector((state) => state?.contactUs);
 
   const [isEditing, setIsEditing] = useState(false);
   const [localBankDetails, setLocalBankDetails] = useState({});
@@ -82,13 +84,25 @@ function AdminDashboard({ ...props }) {
   var tenantLimit =
     currentTenant === "acme" ? 5 : currentTenant === "techpro" ? 10 : Infinity;
   const AdminCourse = useMemo(() => {
-    return Course.filter((c) => c.type === currentUser.tenantId.slug);
+    return Course.filter((c) => c?.type === currentUser?.tenantId?.slug);
   }, [Course, currentUser]);
 
 
-  const tierLearner = Learners.filter(
-    (l) => l.userId.tenantId.slug === currentUser.tenantId.slug,
-  );
+  const tierLearner = Learners.filter((l) => {
+    const lTenantId = l.tenantId || l.userId?.tenantId;
+    const cTenantId = currentUser.tenantId?._id || currentUser.tenantId;
+
+    if (!lTenantId || !cTenantId) return false;
+
+    // Support both ID string comparison and populated object comparison
+    const lId = typeof lTenantId === "string" ? lTenantId : lTenantId?._id || lTenantId?.id;
+    const cId = typeof cTenantId === "string" ? cTenantId : cTenantId?._id || cTenantId?.id;
+
+    if (lId && cId) return String(lId) === String(cId);
+
+    // Fallback to slug if IDs aren't matching or available
+    return l.userId?.tenantId?.slug === currentUser?.tenantId?.slug;
+  });
   const [filteredLearners, setFilteredLearners] = useState("");
 
   const LearnerCourseWise = useMemo(() => {
@@ -99,8 +113,8 @@ function AdminDashboard({ ...props }) {
     return tierLearner.filter((learner) =>
       Enrollment.some(
         (enrollment) =>
-          enrollment.learnerId.userId.id === learner.userId.id &&
-          enrollment.courseId.title === filteredLearners,
+          enrollment?.learnerId?.userId?.id === learner?.userId?.id &&
+          enrollment?.courseId?.title === filteredLearners,
       ),
     );
   }, [Enrollment, filteredLearners, tierLearner]);
@@ -165,11 +179,11 @@ function AdminDashboard({ ...props }) {
   var enrolments = Object.values(ENROLMENT_STORE);
 
   var published = AdminCourse.filter(function (c) {
-    return c.status === "PUBLISHED";
+    return c?.status === "published";
   });
   const totalEnrolled = useMemo(() => {
     return Enrollment.filter(
-      (enrol) => enrol.courseId.type === currentUser.tenantId.slug,
+      (enrol) => enrol?.courseId?.type === currentUser?.tenantId?.slug,
     );
   });
 
@@ -229,7 +243,7 @@ function AdminDashboard({ ...props }) {
   const handleSave = () => {
     dispatch(
       updatebankdetails({
-        id: localBankDetails._id,
+        id: localBankDetails?._id,
         updatedData: localBankDetails,
       }),
     );
@@ -237,7 +251,7 @@ function AdminDashboard({ ...props }) {
   };
 
   function exportEnrolmentReport() {
-    if (Enrollment.length === 0) {
+    if (Enrollment?.length === 0) {
       notify("No enrolment records yet", "error");
       return;
     }
@@ -272,20 +286,20 @@ function AdminDashboard({ ...props }) {
         return rec.docs && rec.docs[k];
       }).length;
       rows.push([
-        (rec.personal && rec.personal.fullName) || "",
-        (rec.personal && rec.personal.idNumber) || "",
-        (rec.personal && rec.personal.email) || "",
-        (rec.course && rec.course.title) || "",
-        (rec && rec.nqfLevel) || "",
-        (rec.secA && rec.secA.credits) || "",
-        (rec.secA && rec.secA.saqaId) || "",
-        (rec.secA && rec.secA.intakeNo) || "",
-        (rec.secA && rec.secA.startDate) || "",
-        (rec.secA && rec.secA.mode) || "",
-        rec.secG && rec.secG.consent ? "Yes" : "No",
-        rec.secF && rec.secF.agreed ? "Yes" : "No",
-        uploaded + "/" + docKeys.length,
-        rec.submittedAt || "",
+        (rec.personal && rec?.personal?.fullName) || "",
+        (rec.personal && rec?.personal?.idNumber) || "",
+        (rec.personal && rec?.personal?.email) || "",
+        (rec.course && rec?.course?.title) || "",
+        (rec && rec?.nqfLevel) || "",
+        (rec.secA && rec?.secA?.credits) || "",
+        (rec.secA && rec?.secA?.saqaId) || "",
+        (rec.secA && rec?.secA?.intakeNo) || "",
+        (rec.secA && rec?.secA?.startDate) || "",
+        (rec.secA && rec?.secA?.mode) || "",
+        rec.secG && rec?.secG?.consent ? "Yes" : "No",
+        rec.secF && rec?.secF?.agreed ? "Yes" : "No",
+        uploaded + "/" + docKeys?.length,
+        rec?.submittedAt || "",
       ]);
     });
     exportXLSX("Enrolment_Report.xlsx", rows, "Enrolments");
@@ -293,11 +307,11 @@ function AdminDashboard({ ...props }) {
   }
 
   const ImportEnrolmentReport = () => {
-    fileInputRef.current.click();
+    fileInputRef?.current?.click();
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
+    const file = e?.target?.files[0];
     if (!file) return;
 
     const reader = new FileReader();
@@ -401,7 +415,7 @@ function AdminDashboard({ ...props }) {
           docs,
           submittedAt: new Date().toISOString(),
         };
-        const key = secB.idNumber + "_" + Course.id;
+        const key = secB?.idNumber + "_" + Course?.id;
 
         ENROLMENT_STORE[key] = record;
       });
@@ -414,14 +428,14 @@ function AdminDashboard({ ...props }) {
 
   // for learner Import
   const downloadExcel = (array) => {
-    const formattedData = array.map((learner) => {
-      const enrollment = Enrollment.find(
-        (enrolment) => enrolment.learnerId.userId.id === learner.userId.id,
+    const formattedData = array?.map((learner) => {
+      const enrollment = Enrollment?.find(
+        (enrolment) => enrolment.learnerId?.userId?.id === learner.userId?.id,
       );
-      const courseTitle = enrollment ? enrollment.courseId.title : "";
+      const courseTitle = enrollment ? enrollment?.courseId?.title : "";
 
       return {
-        UserID: learner.userId._id, // Replace with actual field name for learner's ID
+        UserID: learner?.userId?.id, // Replace with actual field name for learner's ID
         CourseTitle: courseTitle, // Get course title from enrollment
       };
     });
@@ -432,10 +446,10 @@ function AdminDashboard({ ...props }) {
   };
   const convertToCSV = (array) => {
     // Create a userCourses object to map userId to courses and total credits
-    const userCourses = Enrollment.filter((enroll) =>
-      array.some((learner) => learner.userId._id === enroll.learnerId.userId),
+    const userCourses = Enrollment?.filter((enroll) =>
+      array?.some((learner) => learner?.userId?._id === enroll?.learnerId?.userId),
     ).reduce((prev, enroll) => {
-      const userId = enroll.learnerId.userId.toString();
+      const userId = enroll?.learnerId?.userId?.toString();
 
       if (!prev[userId]) {
         prev[userId] = {
@@ -445,9 +459,9 @@ function AdminDashboard({ ...props }) {
         };
       }
 
-      const course = enroll.courseId;
-      prev[userId].courses.push(course.title);
-      prev[userId].totalCredits += course.credits;
+      const course = enroll?.courseId;
+      prev[userId].courses.push(course?.title);
+      prev[userId].totalCredits += course?.credits;
 
       return prev;
     }, {});
@@ -456,12 +470,12 @@ function AdminDashboard({ ...props }) {
     const headers = ["UserID", "Courses", "TotalCredits"];
 
     // Map learners to rows including their courses and total credits
-    const rows = array.map((learner) => {
-      const learnerCourses = userCourses[learner.userId._id];
+    const rows = array?.map((learner) => {
+      const learnerCourses = userCourses[learner?.userId?._id];
       const courseTitles = learnerCourses
-        ? learnerCourses.courses.join(", ")
+        ? learnerCourses?.courses?.join(", ")
         : "";
-      const totalCredits = learnerCourses ? learnerCourses.totalCredits : 0;
+      const totalCredits = learnerCourses ? learnerCourses?.totalCredits : 0;
 
       return [
         learner.userId.name, // Learner's UserID (adjust this field)
@@ -490,8 +504,8 @@ function AdminDashboard({ ...props }) {
     link.click(); // Trigger the download
   };
 
-  const LearnerCourse = activeLearner && Enrollment.filter(
-    (l) => l.learnerId._id === activeLearner._id,
+  const LearnerCourse = activeLearner && Enrollment?.filter(
+    (l) => l?.learnerId?._id === activeLearner?._id,
   );
 
 
@@ -632,9 +646,9 @@ function AdminDashboard({ ...props }) {
                       </label>
                       <input
                         style={css.input}
-                        value={newCourse.title}
+                        value={newCourse?.title}
                         onChange={function (e) {
-                          var v = e.target.value;
+                          var v = e?.target?.value;
                           setNewCourse(function (n) {
                             return { ...n, title: v };
                           });
@@ -646,9 +660,9 @@ function AdminDashboard({ ...props }) {
                       <label style={css.label}>Icon</label>
                       <select
                         style={css.input}
-                        value={newCourse.thumb}
+                        value={newCourse?.thumb}
                         onChange={function (e) {
-                          var v = e.target.value;
+                          var v = e?.target?.value;
                           setNewCourse(function (n) {
                             return { ...n, thumb: v };
                           });
@@ -694,9 +708,9 @@ function AdminDashboard({ ...props }) {
                       <label style={css.label}>Category</label>
                       <select
                         style={css.input}
-                        value={newCourse.cat}
+                        value={newCourse?.cat}
                         onChange={function (e) {
-                          var v = e.target.value;
+                          var v = e?.target?.value;
                           setNewCourse(function (n) {
                             return { ...n, cat: v };
                           });
@@ -716,7 +730,7 @@ function AdminDashboard({ ...props }) {
                           "Hospitality",
                           "Legal",
                           "Education",
-                        ].map(function (c) {
+                        ]?.map(function (c) {
                           return <option key={c}>{c}</option>;
                         })}
                       </select>
@@ -725,17 +739,17 @@ function AdminDashboard({ ...props }) {
                       <label style={css.label}>Level</label>
                       <select
                         style={css.input}
-                        value={newCourse.level}
+                        value={newCourse?.level}
                         onChange={function (e) {
-                          var v = e.target.value;
+                          var v = e?.target?.value;
                           setNewCourse(function (n) {
                             return { ...n, level: v };
                           });
                         }}
                       >
-                        {["BEGINNER", "INTERMEDIATE", "ADVANCED"].map(
+                        {["beginner", "intermediate", "advanced"].map(
                           function (l) {
-                            return <option key={l}>{l}</option>;
+                            return <option key={l}>{l.toUpperCase()}</option>;
                           },
                         )}
                       </select>
@@ -744,9 +758,9 @@ function AdminDashboard({ ...props }) {
                       <label style={css.label}>NQF Level</label>
                       <select
                         style={css.input}
-                        value={newCourse.nqf}
+                        value={newCourse?.nqf}
                         onChange={function (e) {
-                          var v = Number(e.target.value);
+                          var v = Number(e?.target?.value);
                           setNewCourse(function (n) {
                             return { ...n, nqf: v };
                           });
@@ -768,9 +782,9 @@ function AdminDashboard({ ...props }) {
                         type="number"
                         min="1"
                         max={240}
-                        value={newCourse.credits}
+                        value={newCourse?.credits}
                         onChange={function (e) {
-                          var v = e.target.value;
+                          var v = e?.target?.value;
                           setNewCourse(function (n) {
                             return { ...n, credits: v };
                           });
@@ -792,9 +806,9 @@ function AdminDashboard({ ...props }) {
                       <label style={css.label}>SAQA Qualification ID</label>
                       <input
                         style={css.input}
-                        value={newCourse.saqaId}
+                        value={newCourse?.saqaId}
                         onChange={function (e) {
-                          var v = e.target.value;
+                          var v = e?.target?.value;
                           setNewCourse(function (n) {
                             return { ...n, saqaId: v };
                           });
@@ -808,7 +822,7 @@ function AdminDashboard({ ...props }) {
                         defaultValue="Services SETA"
                         style={css.input}
                         onChange={function (e) {
-                          var v = e.target.value;
+                          var v = e?.target?.value;
                           setNewCourse(function (n) {
                             return { ...n, setaAffiliation: v };
                           });
@@ -846,9 +860,9 @@ function AdminDashboard({ ...props }) {
                         type="number"
                         min="50"
                         max="100"
-                        value={newCourse.passingScore}
+                        value={newCourse?.passingScore}
                         onChange={function (e) {
-                          var v = e.target.value;
+                          var v = e?.target?.value;
                           setNewCourse(function (n) {
                             return { ...n, passingScore: v };
                           });
@@ -871,18 +885,18 @@ function AdminDashboard({ ...props }) {
                           gap: 6,
                           fontSize: 13,
                           cursor: "pointer",
-                          background: newCourse.free ? "#10B98115" : "#f8fafc",
+                          background: newCourse?.free ? "#10B98115" : "#f8fafc",
                           border:
                             "1.5px solid " +
-                            (newCourse.free ? "#10B981" : "#e2e8f0"),
+                            (newCourse?.free ? "#10B981" : "#e2e8f0"),
                           borderRadius: 8,
                           padding: "8px 14px",
-                          fontWeight: newCourse.free ? 700 : 400,
+                          fontWeight: newCourse?.free ? 700 : 400,
                         }}
                       >
                         <input
                           type="radio"
-                          checked={newCourse.free === true}
+                          checked={newCourse?.free === true}
                           onChange={function () {
                             setNewCourse(function (n) {
                               return { ...n, free: true, price: "" };
@@ -899,10 +913,10 @@ function AdminDashboard({ ...props }) {
                           gap: 6,
                           fontSize: 13,
                           cursor: "pointer",
-                          background: !newCourse.free ? "#6366F115" : "#f8fafc",
+                          background: !newCourse?.free ? "#6366F115" : "#f8fafc",
                           border:
                             "1.5px solid " +
-                            (!newCourse.free ? "#6366F1" : "#e2e8f0"),
+                            (!newCourse?.free ? "#6366F1" : "#e2e8f0"),
                           borderRadius: 8,
                           padding: "8px 14px",
                           fontWeight: !newCourse.free ? 700 : 400,
@@ -910,7 +924,7 @@ function AdminDashboard({ ...props }) {
                       >
                         <input
                           type="radio"
-                          checked={newCourse.free === false}
+                          checked={newCourse?.free === false}
                           onChange={function () {
                             setNewCourse(function (n) {
                               return { ...n, free: false };
@@ -926,9 +940,9 @@ function AdminDashboard({ ...props }) {
                           type="number"
                           min="0"
                           placeholder="Price in ZAR (excl. VAT)"
-                          value={newCourse.price}
+                          value={newCourse?.price}
                           onChange={function (e) {
-                            var v = e.target.value;
+                            var v = e?.target?.value;
                             setNewCourse(function (n) {
                               return { ...n, price: v };
                             });
@@ -948,9 +962,9 @@ function AdminDashboard({ ...props }) {
                         minHeight: 80,
                         lineHeight: 1.6,
                       }}
-                      value={newCourse.desc}
+                      value={newCourse?.desc}
                       onChange={function (e) {
-                        var v = e.target.value;
+                        var v = e?.target?.value;
                         setNewCourse(function (n) {
                           return { ...n, desc: v };
                         });
@@ -1038,7 +1052,7 @@ function AdminDashboard({ ...props }) {
                         setCourseModules(function (ms) {
                           return ms.concat([copy]);
                         });
-                        setActiveModuleIdx(courseModules.length);
+                        setActiveModuleIdx(courseModules?.length);
                         notify("Module added");
                       }}
                       style={{
@@ -1111,7 +1125,7 @@ function AdminDashboard({ ...props }) {
                   </div>
                 </div>
 
-                {courseModules.length === 0 && (
+                {courseModules?.length === 0 && (
                   <div
                     style={{
                       textAlign: "center",
@@ -1125,11 +1139,11 @@ function AdminDashboard({ ...props }) {
                   </div>
                 )}
 
-                {courseModules.map(function (mod, mi) {
+                {courseModules?.map(function (mod, mi) {
                   var isOpen = activeModuleIdx === mi;
                   return (
                     <div
-                      key={mod.id || mi}
+                      key={mod?.id || mi}
                       style={{
                         marginBottom: 8,
                         border:
@@ -1173,12 +1187,12 @@ function AdminDashboard({ ...props }) {
                             background: "transparent",
                             cursor: "text",
                           }}
-                          value={mod.moduleName || ""}
+                          value={mod?.moduleName || ""}
                           onClick={function (e) {
                             e.stopPropagation();
                           }}
                           onChange={function (e) {
-                            var v = e.target.value;
+                            var v = e?.target?.value;
                             setCourseModules(function (ms) {
                               return ms.map(function (m, i) {
                                 return i === mi ? { ...m, moduleName: v } : m;
@@ -1188,12 +1202,12 @@ function AdminDashboard({ ...props }) {
                           placeholder="Module title"
                         />
                         <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                          {mod.lessons ? mod.lessons.length : 0} lessons
+                          {mod?.lessons ? mod?.lessons?.length : 0} lessons
                         </span>
                         <button
                           onClick={function (e) {
                             e.stopPropagation();
-                            if (courseModules.length <= 1) {
+                            if (courseModules?.length <= 1) {
                               notify(
                                 "A course needs at least one module.",
                                 "error",
@@ -1233,10 +1247,10 @@ function AdminDashboard({ ...props }) {
                             borderTop: "1px solid #f1f5f9",
                           }}
                         >
-                          {(mod.lessons || []).map(function (les, li) {
+                          {(mod.lessons || [])?.map(function (les, li) {
                             return (
                               <div
-                                key={les.id || li}
+                                key={les?.id || li}
                                 style={{
                                   display: "grid",
                                   gridTemplateColumns: "1fr 110px 32px",
@@ -1257,13 +1271,13 @@ function AdminDashboard({ ...props }) {
                                       fontSize: 12,
                                       marginBottom: 4,
                                     }}
-                                    value={les.title}
+                                    value={les?.title}
                                     onChange={function (e) {
-                                      var v = e.target.value;
+                                      var v = e?.target?.value;
                                       setCourseModules(function (ms) {
                                         return ms.map(function (m, i) {
                                           if (i !== mi) return m;
-                                          var newL = m.lessons.map(
+                                          var newL = m?.lessons?.map(
                                             function (l, j) {
                                               return j === li
                                                 ? { ...l, title: v }
@@ -1276,37 +1290,35 @@ function AdminDashboard({ ...props }) {
                                     }}
                                     placeholder="Lesson title"
                                   />
-                                  {selectedLessonType === "TEXT" &&
-                                    les.type === "TEXT" ?
-                                    (
-                                      <input
-                                        key="text-input"
-                                        style={{
-                                          ...css.input,
-                                          padding: "5px 10px",
-                                          fontSize: 11,
-                                          color: "#64748b",
-                                        }}
-                                        value={les.desc || ""}
-                                        onChange={function (e) {
-                                          var v = e.target.value;
-                                          setCourseModules(function (ms) {
-                                            return ms.map(function (m, i) {
-                                              if (i !== mi) return m;
-                                              var newL = m.lessons.map(
-                                                function (l, j) {
-                                                  return j === li
-                                                    ? { ...l, desc: v }
-                                                    : l;
-                                                },
-                                              );
-                                              return { ...m, lessons: newL };
-                                            });
+                                  {(les?.type || "").toUpperCase() === "TEXT" ? (
+                                    <input
+                                      key="text-input"
+                                      style={{
+                                        ...css.input,
+                                        padding: "5px 10px",
+                                        fontSize: 11,
+                                        color: "#64748b",
+                                      }}
+                                      value={les?.desc || ""}
+                                      onChange={function (e) {
+                                        var v = e?.target?.value;
+                                        setCourseModules(function (ms) {
+                                          return ms.map(function (m, i) {
+                                            if (i !== mi) return m;
+                                            var newL = m.lessons.map(
+                                              function (l, j) {
+                                                return j === li
+                                                  ? { ...l, desc: v }
+                                                  : l;
+                                              },
+                                            );
+                                            return { ...m, lessons: newL };
                                           });
-                                        }}
-                                        placeholder="Brief description (optional)"
-                                      />
-                                    )
+                                        });
+                                      }}
+                                      placeholder="Brief description (optional)"
+                                    />
+                                  )
                                     : (
                                       <div
                                         style={{
@@ -1326,7 +1338,7 @@ function AdminDashboard({ ...props }) {
                                             color: "#64748b",
                                           }}
                                           onChange={function (e) {
-                                            var file = e.target.files[0];
+                                            var file = e?.target?.files[0];
                                             if (!file) return;
 
                                             // Create a temporary local URL for previewing
@@ -1334,11 +1346,11 @@ function AdminDashboard({ ...props }) {
                                               URL.createObjectURL(file);
 
                                             setCourseModules(function (ms) {
-                                              return ms.map(function (m, i) {
+                                              return ms?.map(function (m, i) {
                                                 if (i !== mi) return m;
                                                 return {
                                                   ...m,
-                                                  lessons: m.lessons.map(
+                                                  lessons: m?.lessons?.map(
                                                     function (l, j) {
                                                       return j === li
                                                         ? {
@@ -1357,7 +1369,7 @@ function AdminDashboard({ ...props }) {
                                         />
 
                                         {/* 2. Show the existing database URL if it exists */}
-                                        {les.url && !les.tempName && (
+                                        {les?.url && !les?.tempName && (
                                           <div
                                             style={{
                                               fontSize: 10,
@@ -1365,9 +1377,9 @@ function AdminDashboard({ ...props }) {
                                               paddingLeft: 5,
                                             }}
                                           >
-                                            Current File: {les.url}
+                                            Current File: {les?.url}
                                             <a
-                                              href={les.url}
+                                              href={les?.url}
                                               target="_blank"
                                               rel="noreferrer"
                                               style={{
@@ -1380,7 +1392,7 @@ function AdminDashboard({ ...props }) {
                                         )}
 
                                         {/* 3. Show the new filename if the user just selected one */}
-                                        {les.tempName && (
+                                        {les?.tempName && (
                                           <div
                                             style={{
                                               fontSize: 10,
@@ -1389,7 +1401,7 @@ function AdminDashboard({ ...props }) {
                                             }}
                                           >
                                             New file selected:{" "}
-                                            <strong>{les.tempName}</strong>
+                                            <strong>{les?.tempName}</strong>
                                           </div>
                                         )}
                                       </div>
@@ -1401,14 +1413,14 @@ function AdminDashboard({ ...props }) {
                                     padding: "7px 8px",
                                     fontSize: 11,
                                   }}
-                                  value={les.type}
+                                  value={(les?.type || "").toUpperCase()}
                                   onChange={function (e) {
-                                    var v = e.target.value;
+                                    var v = e?.target?.value;
                                     setSelectedLessonType(v);
                                     setCourseModules(function (ms) {
-                                      return ms.map(function (m, i) {
+                                      return ms?.map(function (m, i) {
                                         if (i !== mi) return m;
-                                        var newL = m.lessons.map(
+                                        var newL = m?.lessons?.map(
                                           function (l, j) {
                                             return j === li
                                               ? { ...l, type: v }
@@ -1434,7 +1446,7 @@ function AdminDashboard({ ...props }) {
                                 </select>
                                 <button
                                   onClick={function () {
-                                    if ((mod.lessons || []).length <= 1) {
+                                    if ((mod?.lessons || []).length <= 1) {
                                       notify(
                                         "A module needs at least one lesson.",
                                         "error",
@@ -1442,9 +1454,9 @@ function AdminDashboard({ ...props }) {
                                       return;
                                     }
                                     setCourseModules(function (ms) {
-                                      return ms.map(function (m, i) {
+                                      return ms?.map(function (m, i) {
                                         if (i !== mi) return m;
-                                        var newL = m.lessons.filter(
+                                        var newL = m?.lessons?.filter(
                                           function (_, j) {
                                             return j !== li;
                                           },
@@ -1477,11 +1489,11 @@ function AdminDashboard({ ...props }) {
                                 desc: "",
                               };
                               setCourseModules(function (ms) {
-                                return ms.map(function (m, i) {
+                                return ms?.map(function (m, i) {
                                   return i === mi
                                     ? {
                                       ...m,
-                                      lessons: (m.lessons || []).concat([
+                                      lessons: (m?.lessons || []).concat([
                                         newLes,
                                       ]),
                                     }
@@ -1591,7 +1603,7 @@ function AdminDashboard({ ...props }) {
                         style={{
                           width: 44,
                           height: 24,
-                          background: newCourse.dripEnabled ? p : "#e2e8f0",
+                          background: newCourse?.dripEnabled ? p : "#e2e8f0",
                           borderRadius: 12,
                           border: "none",
                           cursor: "pointer",
@@ -1603,7 +1615,7 @@ function AdminDashboard({ ...props }) {
                           style={{
                             position: "absolute",
                             top: 2,
-                            left: newCourse.dripEnabled ? 22 : 2,
+                            left: newCourse?.dripEnabled ? 22 : 2,
                             width: 20,
                             height: 20,
                             background: "#fff",
@@ -1755,7 +1767,7 @@ function AdminDashboard({ ...props }) {
                       try {
                         // Dispatch the deleteCourse thunk
                         await dispatch(
-                          deleteCourse(editingCourse._id),
+                          deleteCourse(editingCourse?._id || editingCourse?.id),
                         ).unwrap();
 
                         // Optional: close builder and reset local states
@@ -1767,7 +1779,7 @@ function AdminDashboard({ ...props }) {
 
                         notify("Course deleted.");
                       } catch (err) {
-                        notify("Failed to delete course: " + err, "error");
+                        notify(err.error || "Failed to delete course", "error");
                       }
                     }
                   }}
@@ -1778,10 +1790,10 @@ function AdminDashboard({ ...props }) {
               )}
               <button
                 onClick={editingCourse ? saveCourse : createCourse}
-                disabled={!newCourse.title}
+                disabled={!newCourse?.title}
                 style={{
                   ...css.btn(p),
-                  opacity: newCourse.title ? 1 : 0.5,
+                  opacity: newCourse?.title ? 1 : 0.5,
                   minWidth: 140,
                 }}
               >
@@ -1821,19 +1833,19 @@ function AdminDashboard({ ...props }) {
             >
               <StatCard
                 icon="📚"
-                value={AdminCourse.length}
+                value={AdminCourse?.length}
                 label="Total Courses"
                 color={p}
               />
               <StatCard
                 icon="👥"
-                value={totalEnrolled.length.toLocaleString()}
+                value={totalEnrolled?.length.toLocaleString()}
                 label="Total Learners"
                 color="#10B981"
               />
               <StatCard
                 icon="📈"
-                value={published.length}
+                value={published?.length}
                 label="Published"
                 color={a}
               />
@@ -1853,10 +1865,10 @@ function AdminDashboard({ ...props }) {
             >
               <div style={css.card}>
                 <h3 style={{ ...css.h3, marginBottom: 14 }}>Recent Courses</h3>
-                {AdminCourse.slice(0, 4).map(function (c) {
+                {AdminCourse?.slice(0, 4)?.map(function (course) {
                   return (
                     <div
-                      key={c.id}
+                      key={course?.id}
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -1872,13 +1884,13 @@ function AdminDashboard({ ...props }) {
                           gap: 10,
                         }}
                       >
-                        <span style={{ fontSize: 20 }}>{c.thumb}</span>
+                        <span style={{ fontSize: 20 }}>{course?.thumb}</span>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600 }}>
-                            {c.title}
+                            {course?.title}
                           </div>
                           <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                            {c.enrolled} enrolled
+                            {course?.enrolled} enrolled
                           </div>
                         </div>
                       </div>
@@ -1891,14 +1903,14 @@ function AdminDashboard({ ...props }) {
                       >
                         <span
                           style={css.tag(
-                            c.status === "PUBLISHED" ? "#10B981" : "#F59E0B",
+                            course?.status === "published" ? "#10B981" : "#F59E0B",
                           )}
                         >
-                          {c.status}
+                          {course?.status}
                         </span>
                         <button
                           onClick={function () {
-                            openCourseEditor(c);
+                            openCourseEditor(course);
                           }}
                           style={{
                             background: "none",
@@ -1919,11 +1931,11 @@ function AdminDashboard({ ...props }) {
               </div>
               <div style={css.card}>
                 <h3 style={{ ...css.h3, marginBottom: 14 }}>Recent Learners</h3>
-                {tierLearner.slice(0, 4).map(function (l) {
+                {tierLearner?.slice(0, 4)?.map(function (learner) {
                   const userCourses = Enrollment.filter(
-                    (enroll) => enroll.learnerId.userId === l.userId._id,
+                    (enroll) => enroll?.learnerId?.userId === learner?.userId?._id,
                   ).reduce((prev, enroll) => {
-                    const userId = enroll.learnerId.userId.toString();
+                    const userId = enroll?.learnerId?.userId?.toString();
 
                     if (!prev[userId]) {
                       prev[userId] = {
@@ -1934,19 +1946,19 @@ function AdminDashboard({ ...props }) {
                     }
 
                     const course = enroll.courseId;
-                    prev[userId].courses.push(course.title);
-                    prev[userId].totalCredits += course.credits;
+                    prev[userId].courses.push(course?.title);
+                    prev[userId].totalCredits += course?.credits;
 
                     return prev;
                   }, {});
 
-                  const currentUser = userCourses[l.userId._id] || {
+                  const currentUser = userCourses[learner?.userId?._id] || {
                     courses: [],
                     totalCredits: 0,
                   };
                   return (
                     <div
-                      key={l.id}
+                      key={learner?.id}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -1969,8 +1981,8 @@ function AdminDashboard({ ...props }) {
                           fontWeight: 700,
                           flexShrink: 0,
                         }}
-                      > {l?.userId?.name
-                        ? l.userId.name.split(" ")
+                      > {learner?.userId?.name
+                        ? learner?.userId?.name?.split(" ")
                           .slice(0, 2)
                           .map(name => name[0]?.toUpperCase())
                           .filter(Boolean)
@@ -1979,10 +1991,10 @@ function AdminDashboard({ ...props }) {
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600 }}>
-                          {l.userId.name}
+                          {learner?.userId.name}
                         </div>
                         <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                          {l.cohort}
+                          {learner?.cohort}
                         </div>
                       </div>
                       <span
@@ -1992,7 +2004,7 @@ function AdminDashboard({ ...props }) {
                           fontWeight: 700,
                         }}
                       >
-                        {currentUser.totalCredits} cr
+                        {currentUser?.totalCredits} cr
                       </span>
                     </div>
                   );
@@ -2015,8 +2027,8 @@ function AdminDashboard({ ...props }) {
               <h1 style={css.h1}>Courses</h1>
               <button
                 onClick={function () {
-                  (currentTenant === "acme" && limitedCourses.length === 5) ||
-                    (currentTenant === "techpro" && limitedCourses.length === 10)
+                  (currentTenant === "acme" && limitedCourses?.length === 5) ||
+                    (currentTenant === "techpro" && limitedCourses?.length === 10)
                     ? notify(
                       "Please delete the existing course before adding a new one.",
                       "error",
@@ -2039,10 +2051,10 @@ function AdminDashboard({ ...props }) {
                       "Enrolled",
                       "Status",
                       "Actions",
-                    ].map(function (h) {
+                    ]?.map(function (header) {
                       return (
                         <th
-                          key={h}
+                          key={header}
                           style={{
                             textAlign: "left",
                             padding: "8px 12px",
@@ -2051,18 +2063,18 @@ function AdminDashboard({ ...props }) {
                             fontWeight: 600,
                           }}
                         >
-                          {h}
+                          {header}
                         </th>
                       );
                     })}
                   </tr>
                 </thead>
                 <tbody>
-                  {coursesPag.slice.map(function (c) {
-                    const enrolled = Enrollment.filter((e) => e.courseId._id === c.id).length;
+                  {coursesPag.slice.map(function (course) {
+                    const enrolled = Enrollment.filter((enrollment) => enrollment?.courseId?._id === course?.id).length;
                     return (
                       <tr
-                        key={c.id}
+                        key={course?.id}
                         style={{ borderBottom: "1px solid #f8fafc" }}
                       >
                         <td style={{ padding: "12px" }}>
@@ -2073,13 +2085,13 @@ function AdminDashboard({ ...props }) {
                               gap: 10,
                             }}
                           >
-                            <span style={{ fontSize: 20 }}>{c.thumb}</span>
+                            <span style={{ fontSize: 20 }}>{course?.thumb}</span>
                             <div>
                               <div style={{ fontWeight: 600, fontSize: 13 }}>
-                                {c.title}
+                                {course?.title}
                               </div>
                               <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                                {c.level}
+                                {course?.level.toUpperCase()}
                               </div>
                             </div>
                           </div>
@@ -2091,7 +2103,7 @@ function AdminDashboard({ ...props }) {
                             color: "#475569",
                           }}
                         >
-                          {c.cat}
+                          {course?.cat}
                         </td>
                         <td
                           style={{
@@ -2100,7 +2112,7 @@ function AdminDashboard({ ...props }) {
                             fontWeight: 600,
                           }}
                         >
-                          {c.nqf}
+                          {course?.nqf}
                         </td>
                         <td
                           style={{
@@ -2114,17 +2126,17 @@ function AdminDashboard({ ...props }) {
                         <td style={{ padding: "12px" }}>
                           <span
                             style={css.tag(
-                              c.status === "PUBLISHED" ? "#10B981" : "#F59E0B",
+                              course?.status === "published" ? "#10B981" : "#F59E0B",
                             )}
                           >
-                            {c.status}
+                            {course?.status.toUpperCase()}
                           </span>
                         </td>
                         <td style={{ padding: "12px" }}>
                           <div style={{ display: "flex", gap: 6 }}>
                             <button
                               onClick={function () {
-                                openCourse(c);
+                                openCourse(course);
                               }}
                               style={css.btn(p, "#fff", true)}
                             >
@@ -2132,7 +2144,7 @@ function AdminDashboard({ ...props }) {
                             </button>
                             <button
                               onClick={function () {
-                                openCourseEditor(c);
+                                openCourseEditor(course);
                               }}
                               style={{
                                 ...css.btnOut(p, true),
@@ -2143,7 +2155,7 @@ function AdminDashboard({ ...props }) {
                             </button>
                             <button
                               onClick={function () {
-                                setUploadingForCourse(c);
+                                setUploadingForCourse(course);
                               }}
                               style={css.btnOut("#8B5CF6", true)}
                             >
@@ -2151,14 +2163,14 @@ function AdminDashboard({ ...props }) {
                             </button>
                             <button
                               onClick={function () {
-                                publishCourse(c._id, c.status);
+                                publishCourse(course?._id || course?.id, course?.status);
                               }}
                               style={css.btnOut(
-                                c.status === "PUBLISHED" ? "#EF4444" : p,
+                                course?.status === "published" ? "#EF4444" : p,
                                 true,
                               )}
                             >
-                              {c.status === "PUBLISHED"
+                              {course?.status === "published"
                                 ? "Unpublish"
                                 : "Publish"}
                             </button>
@@ -2187,7 +2199,7 @@ function AdminDashboard({ ...props }) {
               <h1 style={css.h1}>Learners</h1>
               <div style={{ display: "flex", gap: 10 }}>
                 <select
-                  onChange={(e) => setFilteredLearners(e.target.value)}
+                  onChange={(e) => setFilteredLearners(e?.target?.value)}
                   style={{
                     width: "100%",
                     padding: "8px 12px",
@@ -2196,13 +2208,13 @@ function AdminDashboard({ ...props }) {
                     border: `1px solid ${p}50`,
                     outline: "none",
                     background: "#fff",
-                    cursor: AdminCourse.length ? "pointer" : "not-allowed",
+                    cursor: AdminCourse?.length ? "pointer" : "not-allowed",
                   }}
                 >
                   <option value="">All Courses</option>
-                  {AdminCourse.filter((f) => f.status === "PUBLISHED").map((course, index) => (
-                    <option key={index} value={course.title}>
-                      {course.title}
+                  {AdminCourse?.filter((f) => f?.status === "published").map((course, index) => (
+                    <option key={index} value={course?.title}>
+                      {course?.title}
                     </option>
                   ))}
                 </select>
@@ -2233,10 +2245,10 @@ function AdminDashboard({ ...props }) {
                       "Completed",
                       "Credits",
                       "Actions",
-                    ].map(function (h) {
+                    ]?.map(function (header) {
                       return (
                         <th
-                          key={h}
+                          key={header}
                           style={{
                             textAlign: "left",
                             padding: "8px 12px",
@@ -2245,33 +2257,33 @@ function AdminDashboard({ ...props }) {
                             fontWeight: 600,
                           }}
                         >
-                          {h}
+                          {header}
                         </th>
                       );
                     })}
                   </tr>
                 </thead>
                 <tbody>
-                  {learnersPag.slice.map(function (l) {
-                    const Enrolled = Enrollment.filter(
-                      (enroll) => enroll.learnerId.userId === l.userId._id,
-                    ).length;
-                    const completedCoursesCount = Enrollment.filter(
-                      (enroll) => enroll.learnerId.userId === l.userId._id
+                  {learnersPag?.slice?.map(function (learner) {
+                    const Enrolled = Enrollment?.filter(
+                      (enroll) => enroll?.learnerId?.userId === learner?.userId?._id,
+                    )?.length;
+                    const completedCoursesCount = Enrollment?.filter(
+                      (enroll) => enroll?.learnerId?.userId === learner?.userId?._id
                     ).reduce((count, enroll) => {
                       const course = enroll.courseId;
 
                       // 👉 Total lessons in course
                       const totalLessons =
                         course?.modules?.flatMap((m) =>
-                          m.lessons.map((lesson) => lesson._id.toString())
+                          m?.lessons?.map((lesson) => lesson?._id?.toString())
                         ).length || 0;
 
 
                       // 👉 Completed lessons for this enrollment
                       const completedLessons = lessonStatus.filter(
                         (ls) =>
-                          ls.enrollId._id.toString() === enroll._id.toString()
+                          ls?.enrollId?._id?.toString() === enroll?._id?.toString()
                       ).length;
                       // 👉 Check if fully completed
                       if (totalLessons > 0 && completedLessons === totalLessons) {
@@ -2281,9 +2293,9 @@ function AdminDashboard({ ...props }) {
                       return count;
                     }, 0);
                     const userCourses = Enrollment.filter(
-                      (enroll) => enroll.learnerId.userId === l.userId._id,
+                      (enroll) => enroll?.learnerId?.userId === learner?.userId?._id,
                     ).reduce((prev, enroll) => {
-                      const userId = enroll.learnerId.userId.toString();
+                      const userId = enroll?.learnerId?.userId?.toString();
 
                       if (!prev[userId]) {
                         prev[userId] = {
@@ -2300,13 +2312,13 @@ function AdminDashboard({ ...props }) {
                       return prev;
                     }, {});
 
-                    const currentUser = userCourses[l.userId._id] || {
+                    const currentUser = userCourses[learner?.userId?._id] || {
                       courses: [],
                       totalCredits: 0,
                     };
                     return (
                       <tr
-                        key={l.id}
+                        key={learner?.id}
                         style={{ borderBottom: "1px solid #f8fafc" }}
                       >
                         <td style={{ padding: "12px" }}>
@@ -2331,15 +2343,15 @@ function AdminDashboard({ ...props }) {
                                 fontWeight: 700,
                               }}
                             >
-                              {l?.userId?.name
-                                ? l.userId.name.split(" ")
-                                  .slice(0, 2)
-                                  .map(name => name[0]?.toUpperCase())
-                                  .filter(Boolean)
-                                  .join('')
+                              {learner?.userId?.name
+                                ? learner?.userId?.name?.split(" ")
+                                  ?.slice(0, 2)
+                                  ?.map(name => name[0]?.toUpperCase())
+                                  ?.filter(Boolean)
+                                  ?.join('')
                                 : ""}                            </div>
                             <div style={{ fontWeight: 600, fontSize: 13 }}>
-                              {l.userId.name}
+                              {learner?.userId?.name}
                             </div>
                           </div>
                         </td>
@@ -2350,13 +2362,13 @@ function AdminDashboard({ ...props }) {
                             color: "#64748b",
                           }}
                         >
-                          {l.userId.email}
+                          {learner?.userId?.email}
                         </td>
                         <td style={{ padding: "12px" }}>
                           <span style={css.tag(courses)}>
-                            {currentUser.courses.length > 0 ? (
+                            {currentUser?.courses?.length > 0 ? (
                               <ul>
-                                {currentUser.courses.map((course, index) => (
+                                {currentUser?.courses?.map((course, index) => (
                                   <li key={index}>{course}</li> // Display course name
                                 ))}
                               </ul>
@@ -2366,7 +2378,7 @@ function AdminDashboard({ ...props }) {
                           </span>
                         </td>
                         <td style={{ padding: "12px" }}>
-                          <span style={css.tag(p)}>{l.cohort}</span>
+                          <span style={css.tag(p)}>{learner?.cohort}</span>
                         </td>
                         <td
                           style={{
@@ -2395,14 +2407,14 @@ function AdminDashboard({ ...props }) {
                             color: "#8B5CF6",
                           }}
                         >
-                          {currentUser.totalCredits}
+                          {currentUser?.totalCredits}
                         </td>
                         <td style={{ padding: "12px" }}>
                           <button
                             onClick={function () {
-                              openModule(l);
+                              openModule(learner);
                               setTab("module");
-                              notify("Viewing " + l.userId.name + "'s profile");
+                              notify("Viewing " + learner?.userId?.name + "'s profile");
                             }}
                             style={css.btn(p, "#fff", true)}
                           >
@@ -2430,7 +2442,7 @@ function AdminDashboard({ ...props }) {
                 marginBottom: 24,
               }}
             >
-              <h1 style={{ ...css.h1, marginBottom: 24 }}>{activeLearner.userId.name} Courses</h1>
+              <h1 style={{ ...css.h1, marginBottom: 24 }}>{activeLearner?.userId?.name} Courses</h1>
 
 
               <button
@@ -2448,54 +2460,18 @@ function AdminDashboard({ ...props }) {
                 gap: 16,
               }}
             >
-              {LearnerCourse?.map(function (c) {
-                const courseStats = lessonStatus.reduce((acc, status) => {
-                  const enrollment = status.enrollId;
-                  const learner = enrollment?.learnerId;
-                  const course = enrollment?.courseId;
+              {LearnerCourse?.map(function (learnerCourse) {
+                // Direct progress calculation for the specific course card
+                const totalLessons = learnerCourse?.courseId?.modules?.reduce((sum, mod) => sum + (mod?.lessons?.length || 0), 0) || 0;
+                const completedLessons = lessonStatus?.filter(ls =>
+                  String(ls?.enrollmentId?._id || ls?.enrollmentId) === String(learnerCourse?._id) &&
+                  ls?.status === "completed"
+                ).length;
+                const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
-                  // 1. Filter for the current user
-                  if (enrollment._id === c._id) {
-                    const courseId =
-                      course?._id?.toString() || "Unknown Course";
-
-                    if (!acc[courseId]) {
-                      // 2. Calculate the "Master Total" of lessons from the Course Schema
-                      // This is the total number of lessons that exist in the course
-                      const totalPossibleLessons =
-                        course?.modules?.flatMap((module) =>
-                          module.lessons.map((l) => l._id),
-                        ).length || 0;
-
-                      acc[courseId] = {
-                        courseName: course?.title || "Untitled",
-                        totalLessonsInCourse: totalPossibleLessons,
-                        lessonsStartedOrFinished: 0,
-                        progressPercentage: 0,
-                      };
-                    }
-
-                    // 3. Increment lessons that have a record in lessonStatus
-                    acc[courseId].lessonsStartedOrFinished += 1;
-
-                    // 4. Calculate the percentage
-                    const { lessonsStartedOrFinished, totalLessonsInCourse } =
-                      acc[courseId];
-                    acc[courseId].progressPercentage =
-                      totalLessonsInCourse > 0
-                        ? Math.round(
-                          (lessonsStartedOrFinished / totalLessonsInCourse) *
-                          100,
-                        )
-                        : 0;
-                  }
-                  return acc;
-                }, {});
-
-                const finalProgress = Object.values(courseStats);
                 return (
                   <div
-                    key={c._id}
+                    key={learnerCourse?._id}
                     style={{ ...css.card, display: "flex", gap: 14 }}
                   >
                     <div
@@ -2510,7 +2486,7 @@ function AdminDashboard({ ...props }) {
                         fontSize: 26,
                       }}
                     >
-                      {c?.courseId.thumb}
+                      {learnerCourse?.courseId?.thumb}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
@@ -2520,49 +2496,23 @@ function AdminDashboard({ ...props }) {
                           marginBottom: 4,
                         }}
                       >
-                        {c?.courseId.title}
+                        {learnerCourse?.courseId?.title}
                       </div>
-                      {
-                        finalProgress.map((f) =>
-                          f.courseName === c.courseId.title ? (
-                            <div key={f.courseName}>
-                              <div style={{
-                                height: 6,
-                                background: "#f1f5f9",
-                                borderRadius: 3,
-                                margin: "6px 0",
-                                overflow: "hidden"
-                              }}>
-                                {/* Change 'background: p' to a color string */}
-                                <div style={{
-                                  height: "100%",
-                                  width: f.progressPercentage + "%",
-                                  background: p, // Use a hex code or color name here
-                                  borderRadius: 3
-                                }} />
-                              </div>
-
-                            </div>
-                          ) : <div key={f.courseName}>
-                            <div style={{
-                              height: 6,
-                              background: "#f1f5f9",
-                              borderRadius: 3,
-                              margin: "6px 0",
-                              overflow: "hidden"
-                            }}>
-                              {/* Change 'background: p' to a color string */}
-                              <div style={{
-                                height: "100%",
-                                width: 0 + "%",
-                                background: p, // Use a hex code or color name here
-                                borderRadius: 3
-                              }} />
-                            </div>
-
-                          </div>
-                        )
-                      }
+                      <div style={{
+                        height: 6,
+                        background: "#f1f5f9",
+                        borderRadius: 3,
+                        margin: "8px 0",
+                        overflow: "hidden"
+                      }}>
+                        <div style={{
+                          height: "100%",
+                          width: progressPercentage + "%",
+                          background: p,
+                          borderRadius: 3,
+                          transition: "width 0.4s ease"
+                        }} />
+                      </div>
                       <div
                         style={{
                           display: "flex",
@@ -2570,26 +2520,16 @@ function AdminDashboard({ ...props }) {
                           alignItems: "center",
                         }}
                       >
-                        {finalProgress.map(
-                          (f) =>
-                            f.courseName === c.courseId.title && (
-                              <div key={f.courseName}>
-                                <span
-                                  style={{ fontSize: 11, color: "#94a3b8" }}
-                                >
-                                  {f.progressPercentage}%
-                                </span>
-                              </div>
-                            ),
-                        )}
+                        <span style={{ fontSize: 11, color: "#94a3b8" }}>{progressPercentage}% complete</span>
+
                         <div style={{ display: "flex", gap: 5 }}>
                           <div style={{ display: "flex", gap: 5 }}>
                             <input
                               type="file"
                               accept=".txt,.pdf"
                               style={{ display: "none" }}
-                              id={`fileUpload-${c?.id}`} // unique ID per course
-                              onChange={(e) => handleFileUpload(e, c?.id)} // pass course ID
+                              id={`fileUpload-${learnerCourse?._id}`} // unique ID per course
+                              onChange={(e) => handleFileUpload(e, learnerCourse?._id)} // pass course ID
                             />
                             <div
                               style={{
@@ -2629,7 +2569,7 @@ function AdminDashboard({ ...props }) {
                             )} */}
                           </div>
 
-                          {c?.progress === 100 ? (
+                          {(learnerCourse?.progress?.percentage ?? learnerCourse?.progress) === 100 ? (
                             <span
                               style={{
                                 ...css.tag("#10B981"),
@@ -2642,7 +2582,7 @@ function AdminDashboard({ ...props }) {
                           ) : (
                             <button
                               onClick={function () {
-                                openCourse(c);
+                                openCourse(learnerCourse);
                               }}
                               style={css.btn(p, "#fff", true)}
                             >
@@ -2734,7 +2674,7 @@ function AdminDashboard({ ...props }) {
                 </>
               </div>
             </div>
-            {Enrollment.length === 0 ? (
+            {Enrollment?.length === 0 ? (
               <div
                 style={{ ...css.card, textAlign: "center", padding: "60px" }}
               >
@@ -2746,7 +2686,7 @@ function AdminDashboard({ ...props }) {
                 </p>
               </div>
             ) : (
-              enrolPag.slice.map(function (rec, i) {
+              enrolPag?.slice?.map(function (rec, i) {
                 var docKeys = [
                   "certifiedId",
                   "highestQual",
@@ -2763,18 +2703,18 @@ function AdminDashboard({ ...props }) {
                   workplaceConf: "Workplace Conf",
                   entryAssessment: "Entry Assessment",
                 };
-                var uploaded = docKeys.filter(function (k) {
-                  return rec.docs && rec.docs[k];
+                var uploaded = docKeys?.filter(function (k) {
+                  return rec?.docs && rec?.docs[k];
                 }).length;
                 var outstanding = docKeys
-                  .filter(function (k) {
-                    return !rec.docs || !rec.docs[k];
+                  ?.filter(function (k) {
+                    return !rec?.docs || !rec?.docs[k];
                   })
                   .map(function (k) {
                     return docLabels[k];
                   });
                 return (
-                  <div key={i} style={{ ...css.card, marginBottom: 14 }}>
+                  <div key={rec?._id} style={{ ...css.card, marginBottom: 14 }}>
                     <div
                       style={{
                         display: "flex",
@@ -2785,7 +2725,7 @@ function AdminDashboard({ ...props }) {
                     >
                       <div>
                         <div style={{ fontWeight: 800, fontSize: 15 }}>
-                          {(rec.personal && rec.personal.fullName) || "—"}
+                          {(rec?.personal && rec?.personal?.fullName) || "—"}
                         </div>
                         <div
                           style={{
@@ -2794,8 +2734,8 @@ function AdminDashboard({ ...props }) {
                             marginTop: 2,
                           }}
                         >
-                          {rec.personal && rec.personal.idNumber} •{" "}
-                          {rec.personal && rec.personal.email}
+                          {rec?.personal && rec?.personal?.idNumber} •{" "}
+                          {rec?.personal && rec?.personal?.email}
                         </div>
                         <div
                           style={{
@@ -2805,9 +2745,9 @@ function AdminDashboard({ ...props }) {
                             fontWeight: 600,
                           }}
                         >
-                          {rec.courseId && rec.courseId.title} — NQF{" "}
-                          {rec.courseId && rec.courseId.nqf} •{" "}
-                          {rec.courseId && rec.courseId.credits} Credits
+                          {rec?.courseId && rec?.courseId?.title} — NQF{" "}
+                          {rec?.courseId && rec?.courseId?.nqf} •{" "}
+                          {rec?.courseId && rec?.courseId?.credits} Credits
                         </div>
                       </div>
                       <span style={{ ...css.tag("#10B981") }}>✓ Submitted</span>
@@ -2821,15 +2761,15 @@ function AdminDashboard({ ...props }) {
                       }}
                     >
                       {[
-                        ["SAQA ID", (rec && rec.saqaId) || "—"],
-                        ["Intake", (rec && rec.intakeNo) || "—"],
+                        ["SAQA ID", (rec && rec?.saqaId) || "—"],
+                        ["Intake", (rec && rec?.intakeNo) || "—"],
                         [
                           "POPIA",
-                          rec.popia && rec.popia.consent ? "✓ Yes" : "⚠ No",
+                          rec?.popia && rec?.popia?.consent ? "✓ Yes" : "⚠ No",
                         ],
                         [
                           "Approved",
-                          (rec.provider && rec.provider.approved) || "—",
+                          (rec?.provider && rec?.provider?.approved) || "—",
                         ],
                       ].map(function (pair) {
                         return (
@@ -2872,12 +2812,12 @@ function AdminDashboard({ ...props }) {
                           marginBottom: 6,
                         }}
                       >
-                        Documents ({uploaded}/{docKeys.length} uploaded)
+                        Documents ({uploaded}/{docKeys?.length} uploaded)
                       </div>
                       <div
                         style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
                       >
-                        {docKeys.map(function (key) {
+                        {docKeys?.map(function (key) {
                           var has = rec.docs && rec.docs[key];
                           return (
                             <span
@@ -2936,7 +2876,7 @@ function AdminDashboard({ ...props }) {
             >
               <StatCard
                 icon="👥"
-                value={totalEnrolled.length.toLocaleString()}
+                value={totalEnrolled?.length.toLocaleString()}
                 label="Total Enrolments"
                 color={p}
               />
@@ -2958,15 +2898,15 @@ function AdminDashboard({ ...props }) {
               <h3 style={{ ...css.h3, marginBottom: 16 }}>
                 Course Performance
               </h3>
-              {AdminCourse.filter(function (c) {
-                return c.status === "PUBLISHED";
+              {AdminCourse?.filter(function (c) {
+                return c?.status === "published";
               }).map(function (c) {
                 const enrolled = Enrollment.filter(
-                  (enroll) => enroll.courseId._id === c._id,
-                ).length;
+                  (enroll) => enroll?.courseId?._id === c?._id,
+                )?.length;
                 var pct = Math.round((enrolled / 500) * 100);
                 return (
-                  <div key={c.id} style={{ marginBottom: 14 }}>
+                  <div key={c?.id} style={{ marginBottom: 14 }}>
                     <div
                       style={{
                         display: "flex",
@@ -2975,7 +2915,7 @@ function AdminDashboard({ ...props }) {
                       }}
                     >
                       <span style={{ fontSize: 13 }}>
-                        {c.thumb} {c.title}
+                        {c?.thumb} {c?.title}
                       </span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: p }}>
                         {enrolled} enrolled
@@ -3109,7 +3049,7 @@ function AdminDashboard({ ...props }) {
                   gap: 12,
                 }}
               >
-                {bankDetailsArray.map(({ key, label }, idx) => (
+                {bankDetailsArray?.map(({ key, label }, idx) => (
                   <div
                     key={key}
                     style={{
@@ -3126,7 +3066,7 @@ function AdminDashboard({ ...props }) {
                         marginBottom: 3,
                       }}
                     >
-                      {label.toUpperCase()}
+                      {label?.toUpperCase()}
                     </div>
                     <input
                       ref={idx === 0 ? firstInputRef : null}
@@ -3796,10 +3736,10 @@ function AdminDashboard({ ...props }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {contactPag.slice.map(function (c) {
+                  {contactPag?.slice?.map(function (contact) {
                     return (
                       <tr
-                        key={c.id}
+                        key={contact?.id}
                         style={{ borderBottom: "1px solid #f8fafc" }}
                       >
                         <td style={{ padding: "12px" }}>
@@ -3824,14 +3764,14 @@ function AdminDashboard({ ...props }) {
                                 fontWeight: 700,
                               }}
                             >
-                              {c?.firstName.toUpperCase()[0]}{c?.lastName.toUpperCase()[0]}
+                              {contact?.firstName.toUpperCase()[0]}{contact?.lastName.toUpperCase()[0]}
                             </div>
                             <div>
                               <div style={{ fontWeight: 600, fontSize: 13 }}>
-                                {c?.firstName} {c?.lastName}
+                                {contact?.firstName} {contact?.lastName}
                               </div>
                               <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                                {c?.businessEmail}
+                                {contact?.businessEmail}
                               </div>
                             </div>
                           </div>
@@ -3843,7 +3783,7 @@ function AdminDashboard({ ...props }) {
                             color: "#475569",
                           }}
                         >
-                          {c?.company}
+                          {contact?.company}
                         </td>
                         <td
                           style={{
@@ -3852,7 +3792,7 @@ function AdminDashboard({ ...props }) {
                             color: "#475569",
                           }}
                         >
-                          {c?.industry}
+                          {contact?.industry}
                         </td>
                         <td
                           style={{
@@ -3861,7 +3801,7 @@ function AdminDashboard({ ...props }) {
                             fontWeight: 600,
                           }}
                         >
-                          {c?.noOfLMs}
+                          {contact?.noOfLMs}
                         </td>
                         <td
                           style={{
@@ -3870,7 +3810,7 @@ function AdminDashboard({ ...props }) {
                             color: "#475569",
                           }}
                         >
-                          {c?.country}
+                          {contact?.country}
                         </td>
                         <td
                           style={{
@@ -3879,7 +3819,7 @@ function AdminDashboard({ ...props }) {
                             color: "#475569",
                           }}
                         >
-                          {c?.jobTitle}
+                          {contact?.jobTitle}
                         </td>
                         <td
                           style={{
@@ -3888,7 +3828,7 @@ function AdminDashboard({ ...props }) {
                             color: "#475569",
                           }}
                         >
-                          {c?.phoneNumber}
+                          {contact?.phoneNumber}
                         </td>
 
 

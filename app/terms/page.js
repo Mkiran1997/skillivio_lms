@@ -1,6 +1,6 @@
 "use client"
 import TermsAndConditions from "@/components/termsConditionPage";
-import { TENANTS } from "../mockData";
+import { TENANTS } from "@/utils/mockData";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 

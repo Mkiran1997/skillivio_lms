@@ -1,23 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import user from "@/app/api/model/user";
-import tenant from "@/app/api/model/tenant";
-import Learner from "@/app/api/model/learner";
+import User from "@/models/user";
+import Tenant from "@/models/tenant";
+import Learner from "@/models/learner";
 
-export async function GET() {
+export async function GET(req) {
     try {
         await dbConnect();
+        const { searchParams } = new URL(req.url);
+        const tenantId = searchParams.get("tenantId");
 
-        const users = await user.find().populate('tenantId');
+        const query = {};
+        if (tenantId) {
+            query.tenantId = tenantId;
+        }
 
-        const mapped = users.map(u => {
-            const obj = u.toObject();
-            return {
-                ...obj,
-                id: obj._id.toString(),
-                tenant: obj.tenantId // overwrite tenant with ID
-            };
-        });
+        const users = await User.find(query).select("-password").lean();
+        const mapped = users.map(u => ({
+            ...u,
+            id: u._id.toString(),
+        }));
         return NextResponse.json(mapped);
     } catch (err) {
         console.error("GET error:", err);
@@ -29,30 +31,46 @@ export async function POST(req) {
     try {
         await dbConnect();
         const data = await req.json();
+        const { tenantId, roles, cohortId } = data;
 
-        const tenantExists = await tenant.findById(data.tenantId);
+        const tenantExists = await Tenant.findById(tenantId);
         if (!tenantExists) {
             return NextResponse.json({ error: "Invalid tenantId" }, { status: 400 });
         }
 
-        // ✅ Create user
-        const newUser = await user.create(data);
+        const existingUser = await User.findOne({ email: data.email, tenantId });
+        if (existingUser) {
+            return NextResponse.json({ error: "Email already exists in this tenant" }, { status: 409 });
+        }
+
+        const userData = {
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            phone: data.phone,
+            tenantId,
+            roles: roles || "learner",
+            avatar: data.avatar,
+        };
+
+        const newUser = await User.create(userData);
 
         let learner = null;
-
-        const existingLearner = await Learner.findOne({ userId: newUser._id });
-        // ✅ Only create learner if role is "learner"
-        if (!existingLearner && data.roles?.includes("learner")) {
+        if (roles === "learner" || !roles) {
             learner = await Learner.create({
-                userId: newUser?._id,
-                cohort: data?.cohort || ""
+                userId: newUser._id,
+                tenantId,
+                cohortId: cohortId || null,
             });
         }
 
+        const response = newUser.toObject();
+        delete response.password;
+
         return NextResponse.json({
-            ...newUser.toObject(),
+            ...response,
             id: newUser._id.toString(),
-            learner // will be null if not learner
+            learner
         });
 
     } catch (err) {

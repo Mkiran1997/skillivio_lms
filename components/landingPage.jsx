@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { GLOBAL_CSS } from '../app/globalCss';
-import { TENANTS } from "../app/mockData";
+import { GLOBAL_CSS } from '@/utils/globalCss';
+import { TENANTS } from "@/utils/mockData";
 import Toast from './toast';
 import { usePathname, useRouter } from "next/navigation";
 

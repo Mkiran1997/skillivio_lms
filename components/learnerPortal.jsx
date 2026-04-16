@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { usePagination } from "../app/utility";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { usePagination } from "@/utils/utility";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import AdminSidebar from "./adminSidebar";
 import StatCard from "./statCard";
 import PaginationBar from "./paginationBar";
@@ -26,7 +26,7 @@ function LearnerPortal({ ...props }) {
     }, [dispatch]);
 
     const userEnrollment = useMemo(() => {
-        return Enrollment.filter((enroll) => enroll.learnerId.userId === currentUser._id)
+        return Enrollment.filter((enroll) => enroll?.learnerId?.userId === currentUser?._id)
     }, [Enrollment, currentUser])
 
 
@@ -34,18 +34,18 @@ function LearnerPortal({ ...props }) {
     const [uploadedFilesByCourse, setUploadedFilesByCourse] = useState({});
     var [enrollingCourse, setEnrolling] = useState(null);
     var [myEnrolments, setMyEnrolments] = useState([]);
-    var myCourses = Enrollment.filter((enrol) => enrol.learnerId.userId === currentUser._id);
-    var browseable = Course.filter(function (c) { return c.status === "PUBLISHED" && currentUser.tenantId.slug === c.type });
+    var myCourses = Enrollment.filter((enrol) => enrol?.learnerId?.userId === currentUser?._id);
+    var browseable = Course.filter(function (c) { return c?.status === "published" && currentUser?.tenantId?.slug === c?.type });
     var browsePag = usePagination(browseable, 6);
     var myCourPag = usePagination(myCourses, 4);
 
 
     var SB_ITEMS = [
         { id: "home", icon: "🏠", label: "My Dashboard" },
-        { id: "courses", icon: "📚", label: "My Courses", badge: myCourses.length },
+        { id: "courses", icon: "📚", label: "My Courses", badge: myCourses?.length },
         { id: "browse", icon: "🔍", label: "Browse Courses" },
-        { id: "enrolments", icon: "📋", label: "My Enrolments", badge: userEnrollment.length || undefined },
-        { id: "certificates", icon: "🏆", label: "Certificates", badge: myCourses.length === 0 ? "0" : "1" },
+        { id: "enrolments", icon: "📋", label: "My Enrolments", badge: userEnrollment?.length || undefined },
+        { id: "certificates", icon: "🏆", label: "Certificates", badge: myCourses?.length === 0 ? "0" : "1" },
         // { id: "community", icon: "💬", label: "Community" },
     ]
 
@@ -56,10 +56,10 @@ function LearnerPortal({ ...props }) {
         const files = Array.from(event.target.files); // convert FileList to array
 
         const validFiles = files.filter(
-            (file) => file.type === "text/plain" || file.type === "application/pdf"
+            (file) => file?.type === "text/plain" || file?.type === "application/pdf"
         );
 
-        if (validFiles.length === 0) {
+        if (validFiles?.length === 0) {
             alert("Please select only text (.txt) or PDF (.pdf) files.");
             return;
         }
@@ -86,63 +86,44 @@ function LearnerPortal({ ...props }) {
         }
     };
 
+    // Robust progress calculation helper
+    const calculateProgress = (enrollment) => {
+        if (!enrollment || !enrollment?.courseId) return 0;
 
-    // 1. Build course-wise stats
-    const courseStats = lessonStatus.reduce((acc, status) => {
-        const enrollment = status.enrollId;
-        const learner = enrollment?.learnerId;
         const course = enrollment?.courseId;
+        const eId = enrollment?._id || enrollment?.id;
 
-        // Only for current user
-        if (learner?.userId === currentUser._id) {
-            const courseId = course?._id?.toString();
-            if (!courseId) return acc;
+        // Count total lessons across all modules
+        const totalLessons = course?.modules?.reduce((sum, mod) => {
+            return sum + (mod.lessons?.length || 0);
+        }, 0) || 0;
 
-            // Initialize course if not exists
-            if (!acc[courseId]) {
-                const totalLessons =
-                    course?.modules?.flatMap((module) =>
-                        module.lessons.map((l) => l._id)
-                    ).length || 0;
+        // Count completed lessons for this specific enrollment
+        const completedCount = lessonStatus.filter(ls =>
+            (String(ls.enrollmentId?._id || ls.enrollmentId || ls.enrollId?._id || ls.enrollId) === String(eId)) &&
+            ls.status === "completed"
+        ).length;
 
-                acc[courseId] = {
-                    courseId,
-                    courseName: course?.title || "Untitled",
-                    totalLessonsInCourse: totalLessons,
-                    lessonsStartedOrFinished: 0,
-                    progressPercentage: 0,
-                };
-            }
+        if (totalLessons === 0) return 0;
+        return Math.min(100, Math.round((completedCount / totalLessons) * 100));
+    };
 
-            // Count lessons with status
-            acc[courseId].lessonsStartedOrFinished += 1;
+    // Calculate individual course progresses
+    const myCourseProgresses = myCourses.map(c => calculateProgress(c));
+
+    // Calculate average progress
+    const avgProgress = myCourseProgresses.length > 0
+        ? Math.round(myCourseProgresses.reduce((sum, p) => sum + p, 0) / myCourseProgresses.length)
+        : 0;
+
+    // Calculate total credits earned (only for completed courses)
+    const totalCreditsEarned = myCourses.reduce((sum, enrollment, idx) => {
+        if (myCourseProgresses[idx] === 100) {
+            return sum + (Number(enrollment?.courseId?.credits) || 0);
         }
+        return sum;
+    }, 0);
 
-        return acc;
-    }, {});
-
-    // 2. Convert to array + calculate progress %
-    const finalProgress = Object.values(courseStats).map((course) => {
-        const progress =
-            course.totalLessonsInCourse > 0
-                ? Math.round(
-                    (course.lessonsStartedOrFinished /
-                        course.totalLessonsInCourse) *
-                    100
-                )
-                : 0;
-
-        return {
-            ...course,
-            progressPercentage: progress,
-        };
-    });
-
-    // 3. Calculate average progress
-    const avgProgress = Math.round(
-        finalProgress.reduce((sum, c) => sum + c.progressPercentage, 0) /
-        Math.max(finalProgress.length, 1)
-    );
     return (
         <div style={{ display: "flex", ...css.page }}>
             <style>{GLOBAL_CSS}</style>
@@ -241,98 +222,41 @@ function LearnerPortal({ ...props }) {
                         <p style={{ color: "#64748b", marginBottom: 24 }}>Continue where you left off</p>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
                             <StatCard icon="📚" value={myCourses.length} label="Enrolled" color={p} />
-                            <StatCard icon="🏆" value={myCourses.filter(function (c) { return c.progress === 100; }).length} label="Completed" color="#10B981" />
+                            <StatCard icon="🏆" value={myCourseProgresses.filter(cp => cp === 100).length} label="Completed" color="#10B981" />
                             <StatCard icon="📈" value={avgProgress + "%"} label="Avg Progress" color={a} />
-                            <StatCard icon="⭐" value="18" label="Credits Earned" color="#8B5CF6" />
+                            <StatCard icon="⭐" value={totalCreditsEarned} label="Credits Earned" color="#8B5CF6" />
                         </div>
                         <div style={{ ...css.card, marginBottom: 16 }}>
                             <h3 style={{ ...css.h3, marginBottom: 16 }}>Continue Learning</h3>
                             {myCourses.map(function (c) {
-                                const courseStats = lessonStatus.reduce((acc, status) => {
-                                    const enrollment = status.enrollId;
-                                    const learner = enrollment?.learnerId;
-                                    const course = enrollment?.courseId;
-
-                                    if (learner?.userId === currentUser._id) {
-                                        const courseId = course?._id?.toString() || "Unknown Course";
-
-                                        if (!acc[courseId]) {
-                                            const totalPossibleLessons = course?.modules?.flatMap(
-                                                (module) => module.lessons.map((l) => l._id)
-                                            ).length || 0;
-
-                                            acc[courseId] = {
-                                                courseName: course?.title || "Untitled",
-                                                totalLessonsInCourse: totalPossibleLessons,
-                                                lessonsStartedOrFinished: 0,
-                                                progressPercentage: 0
-                                            };
-                                        }
-
-                                        // 3. Increment lessons that have a record in lessonStatus
-                                        acc[courseId].lessonsStartedOrFinished += 1;
-
-                                        // 4. Calculate the percentage
-                                        const { lessonsStartedOrFinished, totalLessonsInCourse } = acc[courseId];
-                                        acc[courseId].progressPercentage = totalLessonsInCourse > 0
-                                            ? Math.round((lessonsStartedOrFinished / totalLessonsInCourse) * 100)
-                                            : 0;
-                                    }
-                                    return acc;
-                                }, {});
-
-                                const finalProgress = Object.values(courseStats);
-
-
+                                const progress = calculateProgress(c);
                                 return (
                                     <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 0", borderBottom: "1px solid #f8fafc" }}>
                                         <div style={{ width: 44, height: 44, background: p + "18", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{c.courseId.thumb}</div>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: 700, fontSize: 14 }}>{c.courseId.title}</div>
-                                            {
-                                                finalProgress.map((f) =>
-                                                    f.courseName === c.courseId.title ?
-                                                        (<div key={f.courseName}>
-                                                            <div style={{
-                                                                height: 6,
-                                                                background: "#f1f5f9",
-                                                                borderRadius: 3,
-                                                                margin: "6px 0",
-                                                                overflow: "hidden"
-                                                            }}>
-                                                                {/* Change 'background: p' to a color string */}
-                                                                <div style={{
-                                                                    height: "100%",
-                                                                    width: f.progressPercentage + "%",
-                                                                    background: p, // Use a hex code or color name here
-                                                                    borderRadius: 3
-                                                                }} />
-                                                            </div>
-                                                            <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                                                                {f.progressPercentage}% complete
-                                                            </div>
-                                                        </div>) : (<div key={f.courseName}>
-                                                            <div style={{
-                                                                height: 6,
-                                                                background: "#f1f5f9",
-                                                                borderRadius: 3,
-                                                                margin: "6px 0",
-                                                                overflow: "hidden"
-                                                            }}>
-                                                                {/* Change 'background: p' to a color string */}
-                                                                <div style={{
-                                                                    height: "100%",
-                                                                    width: 0 + "%",
-                                                                    background: p, // Use a hex code or color name here
-                                                                    borderRadius: 3
-                                                                }} />
-                                                            </div>
-                                                            <div style={{ fontSize: 11, color: "#94a3b8" }}>
-                                                                0% complete
-                                                            </div>
-                                                        </div>)
-                                                )
-                                            }
+                                            <div style={{ marginTop: 8 }}>
+                                                <div style={{
+                                                    maxWidth: "100%",
+                                                    height: 6,
+                                                    background: "#f1f5f9",
+                                                    borderRadius: 3,
+                                                    margin: "6px 0",
+                                                    overflow: "hidden",
+                                                    width: "100%",
+                                                }}>
+                                                    <div style={{
+                                                        height: "100%",
+                                                        width: progress + "%",
+                                                        background: p,
+                                                        borderRadius: 3,
+                                                        transition: "width 0.4s ease"
+                                                    }} />
+                                                </div>
+                                                <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                                                    {progress}% complete
+                                                </div>
+                                            </div>
                                         </div>
                                         <button onClick={function () { openCourse(c); }} style={css.btn(p, "#fff", true)}>Continue</button>
                                     </div>
@@ -393,144 +317,113 @@ function LearnerPortal({ ...props }) {
                         <h1 style={{ ...css.h1, marginBottom: 24 }}>My Courses</h1>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 16 }}>
                             {myCourses?.map(function (c) {
-                                const courseStats = lessonStatus.reduce((acc, status) => {
-                                    const enrollment = status.enrollId;
-                                    const learner = enrollment?.learnerId;
-                                    const course = enrollment?.courseId;
+                                const progress = calculateProgress(c);
 
-                                    if (learner?.userId === currentUser._id) {
-                                        const courseId = course?._id?.toString() || "Unknown Course";
-
-                                        if (!acc[courseId]) {
-                                            const totalPossibleLessons = course?.modules?.flatMap(
-                                                (module) => module.lessons.map((l) => l._id)
-                                            ).length || 0;
-
-                                            acc[courseId] = {
-                                                courseName: course?.title || "Untitled",
-                                                totalLessonsInCourse: totalPossibleLessons,
-                                                lessonsStartedOrFinished: 0,
-                                                progressPercentage: 0
-                                            };
-                                        }
-
-                                        acc[courseId].lessonsStartedOrFinished += 1;
-
-                                        const { lessonsStartedOrFinished, totalLessonsInCourse } = acc[courseId];
-                                        acc[courseId].progressPercentage = totalLessonsInCourse > 0
-                                            ? Math.round((lessonsStartedOrFinished / totalLessonsInCourse) * 100)
-                                            : 0;
-                                    }
-                                    return acc;
-                                }, {});
-
-                                const finalProgress = Object.values(courseStats);
                                 return (
                                     <div key={c._id} style={{ ...css.card, display: "flex", gap: 14 }}>
                                         <div style={{ width: 52, height: 52, background: p + "18", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{c?.courseId.thumb}</div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{c?.courseId.title}</div>
-                                            {
-                                                finalProgress.map((f) =>
-                                                    f.courseName === c.courseId.title ? (
-                                                        <div key={f.courseName}>
-                                                            <div style={{
-                                                                height: 6,
-                                                                background: "#f1f5f9",
-                                                                borderRadius: 3,
-                                                                margin: "6px 0",
-                                                                overflow: "hidden"
-                                                            }}>
-                                                                {/* Change 'background: p' to a color string */}
-                                                                <div style={{
-                                                                    height: "100%",
-                                                                    width: f.progressPercentage + "%",
-                                                                    background: p, // Use a hex code or color name here
-                                                                    borderRadius: 3
-                                                                }} />
-                                                            </div>
-
-                                                        </div>
-                                                    ) : <div key={f.courseName}>
-                                                        <div style={{
-                                                            height: 6,
-                                                            background: "#f1f5f9",
-                                                            borderRadius: 3,
-                                                            margin: "6px 0",
-                                                            overflow: "hidden"
-                                                        }}>
-                                                            {/* Change 'background: p' to a color string */}
-                                                            <div style={{
-                                                                height: "100%",
-                                                                width: 0 + "%",
-                                                                background: p, // Use a hex code or color name here
-                                                                borderRadius: 3
-                                                            }} />
-                                                        </div>
-
-                                                    </div>
-                                                )
-                                            }
+                                            <div style={{
+                                                height: 6,
+                                                background: "#f1f5f9",
+                                                borderRadius: 3,
+                                                margin: "8px 0",
+                                                overflow: "hidden"
+                                            }}>
+                                                <div style={{
+                                                    height: "100%",
+                                                    width: progress + "%",
+                                                    background: p,
+                                                    borderRadius: 3,
+                                                    transition: "width 0.4s ease"
+                                                }} />
+                                            </div>
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                {
-                                                    finalProgress.map((f) =>
-                                                        f.courseName === c.courseId.title ? (
-                                                            <div key={f.courseName}>
-                                                                <span style={{ fontSize: 11, color: "#94a3b8" }}>{f.progressPercentage}%</span>
-
-
-                                                            </div>
-                                                        ) : (
-                                                            <div key={f.courseName}>
-                                                                <span style={{ fontSize: 11, color: "#94a3b8" }}>0%</span>
-                                                            </div>
-                                                        )
-                                                    )
-                                                }
-                                                <div style={{ display: "flex", gap: 5 }}>
-                                                    <div style={{ display: "flex", gap: 5 }}>
+                                                <span style={{ fontSize: 11, color: "#94a3b8" }}>{progress}% complete</span>
+                                                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                                    <div style={{ display: "flex", gap: 8 }}>
                                                         <input
                                                             type="file"
                                                             accept=".txt,.pdf"
                                                             style={{ display: "none" }}
-                                                            id={`fileUpload-${c?.id}`} // unique ID per course
-                                                            onChange={(e) => handleFileUpload(e, c?.id)} // pass course ID
+                                                            id={`fileUpload-${c?._id}`}
+                                                            onChange={(e) => handleFileUpload(e, c?._id)}
                                                         />
-                                                        <div style={{ backgroundColor: "#007BFF", color: "#fff", padding: "10px", border: "none", borderRadius: "4px" }}>
-                                                            Practical
-                                                        </div>
-                                                        {uploadedFilesByCourse[c?.id]?.length > 0 && (
-                                                            <div>
-                                                                <ul>
-                                                                    {uploadedFilesByCourse[c?.id].map((file, index) => (
-                                                                        <li key={index} style={{ marginTop: 5 }}>
-
-                                                                            <button
-                                                                                onClick={() => openFile(file)}
-                                                                                style={{
-                                                                                    marginLeft: 10,
-                                                                                    padding: "2px 5px",
-                                                                                    backgroundColor: "#4CAF50",
-                                                                                    color: "#fff",
-                                                                                    border: "none",
-                                                                                    borderRadius: 3,
-                                                                                }}
-                                                                            >
-                                                                                Open
-                                                                            </button>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
-                                                        )}
-
+                                                        <label
+                                                            htmlFor={`fileUpload-${c?._id}`}
+                                                            style={{
+                                                                backgroundColor: "#3b82f6",
+                                                                color: "#fff",
+                                                                padding: "8px 16px",
+                                                                borderRadius: "8px",
+                                                                fontSize: "12px",
+                                                                fontWeight: "600",
+                                                                cursor: "pointer",
+                                                                display: "inline-flex",
+                                                                alignItems: "center",
+                                                                transition: "all 0.2s ease",
+                                                                boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)"
+                                                            }}
+                                                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#2563eb"}
+                                                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#3b82f6"}
+                                                        >
+                                                            📋 Practical
+                                                        </label>
                                                     </div>
 
-                                                    {c?.progress === 100
-                                                        ? <span style={{ ...css.tag("#10B981"), fontSize: 10, paddingTop: 10 }}>Completed</span>
-                                                        : <button onClick={function () { openCourse(c); }} style={css.btn(p, "#fff", true)}>Continue</button>}
+                                                    {(progress === 100)
+                                                        ? <div style={{
+                                                            background: "#f0fdf4",
+                                                            color: "#16a34a",
+                                                            padding: "8px 16px",
+                                                            borderRadius: "8px",
+                                                            fontSize: "12px",
+                                                            fontWeight: "700",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "4px",
+                                                            border: "1px solid #bbf7d0"
+                                                        }}>
+                                                            <span style={{ fontSize: 14 }}>✓</span> Completed
+                                                        </div>
+                                                        : <button
+                                                            onClick={function () { openCourse(c); }}
+                                                            style={{
+                                                                ...css.btn(p, "#fff", true),
+                                                                padding: "8px 16px",
+                                                                borderRadius: "8px",
+                                                                fontSize: "12px",
+                                                                fontWeight: "700",
+                                                                boxShadow: `0 2px 4px ${p}33`
+                                                            }}>
+                                                            Continue →
+                                                        </button>
+                                                    }
                                                 </div>
                                             </div>
+                                            {uploadedFilesByCourse[c?._id]?.length > 0 && (
+                                                <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                                    {uploadedFilesByCourse[c?._id].map((file, index) => (
+                                                        <div key={index} style={{
+                                                            fontSize: "10px",
+                                                            background: "#f8fafc",
+                                                            border: "1px solid #e2e8f0",
+                                                            padding: "2px 8px",
+                                                            borderRadius: "4px",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "4px"
+                                                        }}>
+                                                            <span style={{ color: "#64748b" }}>📄 {file.name.substring(0, 15)}...</span>
+                                                            <button
+                                                                onClick={() => openFile(file)}
+                                                                style={{ border: "none", background: "none", color: p, cursor: "pointer", fontWeight: "700" }}
+                                                            >View</button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TENANTS } from "../app/mockData";
-import { useTheme } from "../app/utility";
+import { TENANTS } from "@/utils/mockData";
+import { useTheme } from "@/utils/utility";
 import LandingPage from "./landingPage";
 
 import { useDispatch, useSelector } from "react-redux";

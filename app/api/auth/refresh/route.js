@@ -1,6 +1,6 @@
 import dbConnect from "@/lib/mongoose";
-import Session from "@/app/api/model/session";
-import User from "@/app/api/model/user";
+import Session from "@/models/session";
+import User from "@/models/user";
 import { verifyRefreshToken, signAccessToken, signRefreshToken } from "@/lib/jwt";
 import bcrypt from "bcrypt";
 import { cookies } from "next/headers";

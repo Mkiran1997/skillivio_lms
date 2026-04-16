@@ -1,22 +1,25 @@
-// app/api/courses/[id]/route.js
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import user from "@/app/api/model/user";
+import User from "@/models/user";
+import Tenant from "@/models/tenant";
+import Learner from "@/models/learner";
 
 export async function GET(req, { params }) {
   try {
     await dbConnect();
-
-    // Find the user by ID and populate tenant info
-    const userDoc = await user.findById(params.id).populate('tenantId');
+    const { id } = await params;
+    const userDoc = await User.findById(id).select("-password").lean();
     if (!userDoc) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    let learner = null;
+    learner = await Learner.findOne({ userId: userDoc._id }).lean();
+
     return NextResponse.json({
-      ...userDoc.toObject(),
+      ...userDoc,
       id: userDoc._id.toString(),
-      tenant: userDoc.tenantId, // populated tenant object
+      learner
     });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -26,26 +29,57 @@ export async function GET(req, { params }) {
 export async function PUT(req, { params }) {
   try {
     await dbConnect();
+    const { id } = await params;
     const data = await req.json();
+    const { tenantId, cohortId } = data;
 
-    // If tenantId is being updated, validate it exists
-    if (data.tenantId) {
-      const tenantExists = await user.db.model('tenants').findById(data.tenantId);
+    if (tenantId) {
+      const tenantExists = await Tenant.findById(tenantId);
       if (!tenantExists) {
         return NextResponse.json({ error: "Invalid tenantId" }, { status: 400 });
       }
     }
 
-    // Update the user
-    const updatedUser = await user.findByIdAndUpdate(params.id, data, { new: true }).populate('tenantId');
+    const updateData = {
+      ...(data.name && { name: data.name }),
+      ...(data.email && { email: data.email }),
+      ...(data.phone && { phone: data.phone }),
+      ...(data.avatar && { avatar: data.avatar }),
+      ...(data.roles && { roles: data.roles }),
+      ...(tenantId && { tenantId }),
+      ...(data.isActive !== undefined && { isActive: data.isActive }),
+    };
+
+    if (data.password) {
+      updateData.password = data.password;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true }).select("-password").lean();
     if (!updatedUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    let learner = null;
+    if (data.cohortId !== undefined || data.status || data.demographics || data.contact) {
+      const learnerUpdate = {
+        ...(cohortId !== undefined && { cohortId }),
+        ...(data.status && { status: data.status }),
+        ...(data.demographics && { demographics: data.demographics }),
+        ...(data.contact && { contact: data.contact }),
+      };
+      learner = await Learner.findOneAndUpdate(
+        { userId: id },
+        learnerUpdate,
+        { new: true, upsert: true }
+      );
+    } else {
+      learner = await Learner.findOne({ userId: id }).lean();
+    }
+
     return NextResponse.json({
-      ...updatedUser.toObject(),
+      ...updatedUser,
       id: updatedUser._id.toString(),
-      tenant: updatedUser.tenantId,
+      learner
     });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -55,11 +89,14 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    const deletedUser = await user.findByIdAndDelete(params.id);
-    if (!deletedUser) {
+    const userDoc = await User.findByIdAndDelete(id);
+    if (!userDoc) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    await Learner.findOneAndDelete({ userId: id });
 
     return NextResponse.json({ message: "Deleted successfully" });
   } catch (err) {

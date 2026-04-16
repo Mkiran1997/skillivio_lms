@@ -1,6 +1,6 @@
 import dbConnect from "@/lib/mongoose";
-import User from "@/app/api/model/user";
-import Session from "@/app/api/model/session";
+import User from "@/models/user";
+import Session from "@/models/session";
 import { signAccessToken, signRefreshToken } from "@/lib/jwt";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";

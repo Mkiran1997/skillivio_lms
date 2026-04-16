@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { getUser } from "../app/utility";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { getUser } from "@/utils/utility";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUsers } from "@/store/slices/authSlice";
 import { current } from "@reduxjs/toolkit";

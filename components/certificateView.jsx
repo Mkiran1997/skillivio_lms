@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import Toast from "./toast";
 
 function CertificateView({ ...props }) {

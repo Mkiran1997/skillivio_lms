@@ -1,7 +1,7 @@
 // app/api/courses/[id]/route.js
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import tenant from "@/app/api/model/tenant";
+import tenant from "@/models/tenant";
 
 export async function GET(req, { params }) {
   try {

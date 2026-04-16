@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { GLOBAL_CSS } from "../app/globalCss";
-import { TIER_DATA } from "../app/mockData";
+import { GLOBAL_CSS } from "@/utils/globalCss";
+import { TIER_DATA } from "@/utils/mockData";
 
 function TierDemoView({ ...props }) {
     var tier = props.tier, onClose = props.onClose;
