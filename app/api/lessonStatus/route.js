@@ -1,42 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import lessonStatus from "@/app/api/model/lessonStatus";
-import enrollment from "@/app/api/model/enrollment";
-import lesson from "@/app/api/model/lesson";
-import { populate } from "dotenv";
+import LessonStatus from "@/models/lessonStatus";
+import Lesson from "@/models/lesson";
+import Enrollment from "@/models/enrollment";
+import Course from "@/models/course";
+import Learner from "@/models/learner";
 
-export async function GET() {
+export async function GET(req) {
   try {
     await dbConnect();
+    const { searchParams } = new URL(req.url);
+    const enrollmentId = searchParams.get("enrollmentId");
+    const learnerId = searchParams.get("learnerId");
+    const courseId = searchParams.get("courseId");
+    const status = searchParams.get("status");
 
-    const lessonStatuses = await lessonStatus
-      .find()
+    const query = {};
+    if (enrollmentId) query.enrollmentId = enrollmentId;
+    if (learnerId) query.learnerId = learnerId;
+    if (courseId) query.courseId = courseId;
+    if (status) query.status = status;
+
+    const lessonStatuses = await LessonStatus.find(query)
       .populate("lessonId")
       .populate({
-        path: "enrollId",
+        path: "enrollmentId",
         populate: [
-          {
-            path: "courseId",
-            populate: {
-              path: "modules",
-              populate: { path: "lessons" },
-            },
-          },
-          {
-            path: "learnerId", // This adds the learner details to the enrollment
-          },
-        ],
-      });
+          { path: "courseId" },
+          { path: "learnerId" }
+        ]
+      })
+      .lean();
 
-    const mapped = lessonStatuses.map((u) => {
-      const obj = u.toObject();
-      return {
-        ...obj,
-        id: obj._id.toString(),
-        enroll: obj.enrollId,
-        lesson: obj.lessonId, // overwrite tenant with ID
-      };
-    });
+    const mapped = lessonStatuses.map(ls => ({
+      ...ls,
+      id: ls._id.toString(),
+    }));
     return NextResponse.json(mapped);
   } catch (err) {
     console.error("GET error:", err);
@@ -46,50 +45,62 @@ export async function GET() {
 
 export async function POST(req) {
   try {
-    // Step 1: Ensure DB connection
     await dbConnect();
-
-    // Step 2: Parse the incoming request body as JSON
     const data = await req.json();
+    const { enrollmentId, lessonId, learnerId, courseId, status, progress, assessment } = data;
 
-    // Step 3: Validate the tenantId (optional based on your logic)
-    if (data.lessonId) {
-      const lessonExists = await lesson.findById(data.lessonId);
-      if (!lessonExists) {
-        return NextResponse.json(
-          { error: "Invalid tenantId" },
-          { status: 400 },
-        );
-      }
-    }
-    if (data.enrollId) {
-      const enrollExists = await enrollment.findById(data.enrollId);
-      if (!enrollExists) {
-        return NextResponse.json(
-          { error: "Invalid tenantId" },
-          { status: 400 },
-        );
-      }
+    if (!enrollmentId || !lessonId || !learnerId || !courseId) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Step 4: Create a new lessonStatus document using the incoming data
-    const newLessonStatus = await lessonStatus.create({
-      moduleName: data.moduleName,
-      lessonId: data.lessonId,
-      enrollId: data.enrollId,
-      status: data.status || "", // Default to empty string if no status is provided
-    });
+    const lessonStatus = await LessonStatus.findOneAndUpdate(
+      { enrollmentId, lessonId },
+      { 
+        learnerId, 
+        courseId, 
+        status: status || "completed", 
+        progress: progress || {}, 
+        assessment: assessment || {} 
+      },
+      { new: true, upsert: true }
+    );
 
-    // Step 5: Return the created lessonStatus with its id
+    // Update Enrollment progress if status is completed
+    if (status === "completed" || !status) { // Defaulting to completed if not provided, assuming "Mark as Complete" action
+      const completedCount = await LessonStatus.countDocuments({ 
+        enrollmentId, 
+        status: "completed" 
+      });
+
+      const enrollment = await Enrollment.findById(enrollmentId).populate("courseId");
+      if (enrollment) {
+        // Find total lessons in course
+        const course = await Course.findById(enrollment.courseId._id).populate("modules");
+        let totalLessons = 0;
+        if (course && course.modules) {
+          // This requires populating all lessons across all modules to get a true count
+          // Alternative: if the course model has a 'lessons' count field, use that.
+          // Based on previous view, course model seems to have a 'lessons' number field.
+          totalLessons = course.lessons || 0;
+        }
+
+        const percentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+        
+        await Enrollment.findByIdAndUpdate(enrollmentId, {
+          "progress.lessonsCompleted": completedCount,
+          "progress.totalLessons": totalLessons,
+          "progress.percentage": percentage,
+          status: percentage === 100 ? "completed" : "in-progress"
+        });
+      }
+    }
+
     return NextResponse.json({
-      ...newLessonStatus.toObject(),
-      id: newLessonStatus._id.toString(), // Convert ObjectId to string for frontend use
+      ...lessonStatus.toObject(),
+      id: lessonStatus._id.toString(),
     });
   } catch (err) {
-    // Step 6: Handle errors and log them
     console.error("POST error:", err);
-
-    // Return an error response
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

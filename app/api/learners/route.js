@@ -1,20 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import learner from "@/app/api/model/learner";
+import Learner from "@/models/learner";
+import User from "@/models/user";
+import Cohort from "@/models/cohort";
 
-export async function GET() {
+export async function GET(req) {
   try {
     await dbConnect();
-    const learners = await learner.find().populate({
-      path: "userId", 
-      populate: {
-        path: "tenantId", 
-        model: "tenants", 
-      },
-    });
-    const mapped = learners.map((c) => ({
-      ...c.toObject(),
-      id: c._id.toString(),
+    const { searchParams } = new URL(req.url);
+    const tenantId = searchParams.get("tenantId");
+    const cohortId = searchParams.get("cohortId");
+    const status = searchParams.get("status");
+
+    const query = {};
+    if (tenantId) query.tenantId = tenantId;
+    if (cohortId) query.cohortId = cohortId;
+    if (status) query.status = status;
+
+    const learners = await Learner.find(query)
+      .populate({
+        path: "userId",
+        select: "-password"
+      })
+      .populate({
+        path: "cohortId"
+      })
+      .lean();
+
+    const mapped = learners.map(l => ({
+      ...l,
+      id: l._id.toString(),
     }));
     return NextResponse.json(mapped);
   } catch (err) {
@@ -27,10 +42,22 @@ export async function POST(req) {
   await dbConnect();
   try {
     const data = await req.json();
-    const learners = await learner.create(data);
+    const { userId, tenantId, cohortId, demographics, contact, employment, emergencyContact } = data;
+
+    const learnerData = {
+      userId,
+      tenantId,
+      cohortId: cohortId || null,
+      demographics: demographics || {},
+      contact: contact || {},
+      employment: employment || {},
+      emergencyContact: emergencyContact || {},
+    };
+
+    const learner = await Learner.create(learnerData);
     return NextResponse.json({
-      ...learners.toObject(),
-      id: learners._id.toString(),
+      ...learner.toObject(),
+      id: learner._id.toString(),
     });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

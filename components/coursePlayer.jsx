@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import Toast from "./toast";
 import { useDispatch, useSelector } from "react-redux";
 import {
     createlessonStatus,
     fetchlessonStatus,
 } from "@/store/slices/lessonStatusSlice";
+import { updateEnrollment } from "@/store/slices/enrollmentSlice";
 
 function CoursePlayer({ ...props }) {
     // var css = props.css, p = props.p, s = props.s, a = props.a, tenant = props.tenant,
@@ -30,81 +31,49 @@ function CoursePlayer({ ...props }) {
         setAssessSubmitted,
         currentUser
     } = props;
+
     const { lessonStatus } = useSelector((state) => state.lessonStatus);
+
+
 
     const dispatch = useDispatch();
     var [cpTab, setCpTab] = useState("intro"); // intro | instructions | lessons | materials
-    var [introAccepted, setIntroAccepted] = useState(false);
-    var [instructionsAck, setInstructionsAck] = useState(false);
+
+    // Sync intro and instructions ack from enrollment if it exists
+    var [introAccepted, setIntroAccepted] = useState(activeCourse?.introAccepted || false);
+    var [instructionsAck, setInstructionsAck] = useState(activeCourse?.instructionsAck || false);
     var [matSearch, setMatSearch] = useState("");
 
-    const Modules =
-        typeof activeCourse.courseId === "object"
-            ? activeCourse.courseId.modules.flatMap((module) =>
-                module.lessons.map((l) => l.title),
-            )
-            : activeCourse.modules.flatMap((module) =>
-                module.lessons.map((l) => l.title),
-            );
-    const materials =
-        typeof activeCourse.courseId === "object"
-            ? activeCourse.courseId.modules.flatMap((module) => module.lessons)
-            : activeCourse.modules.flatMap((module) => module.lessons);
+    const isAdmin = userRole === "admin" || userRole === "superAdmin";
 
-    var TITLES = Modules;
-    var ID =
-        typeof activeCourse.courseId === "object"
-            ? activeCourse.courseId.modules.flatMap((module) =>
-                module.lessons.map((l) => l._id),
-            )
-            : activeCourse.modules.flatMap((module) =>
-                module.lessons.map((l) => l._id),
-            );
-    var TYPES =
-        typeof activeCourse.courseId === "object"
-            ? activeCourse.courseId.modules.flatMap((module) =>
-                module.lessons.map((l) => l.type),
-            )
-            : activeCourse.modules.flatMap((module) =>
-                module.lessons.map((l) => l.type),
-            );
-    const DESC =
-        typeof activeCourse.courseId === "object"
-            ? activeCourse.courseId.modules.flatMap((module) =>
-                module.lessons.map((l) => l.desc),
-            )
-            : activeCourse.modules.flatMap((module) =>
-                module.lessons.map((l) => l.desc),
-            );
-    const URL =
-        typeof activeCourse.courseId === "object"
-            ? activeCourse.courseId.modules.flatMap((module) =>
-                module.lessons.map((l) => l.url),
-            )
-            : activeCourse.modules.flatMap((module) =>
-                module.lessons.map((l) => l.url),
-            );
-    var DURS = [12, 8, 18, 5, 22, 15, 10, 6];
-    var count =
-        typeof activeCourse.courseId === "object"
-            ? activeCourse.courseId.modules.flatMap((module) => module.lessons).length
-            : activeCourse.modules.flatMap((module) => module.lessons).length;
-    var lessonCount = activeCourse ? count || 8 : 8;
-    var lessons = [];
-    for (var i = 0; i < lessonCount; i++) {
-        lessons.push({
-            id: ID[i % 8],
-            title: TITLES[i % 8],
-            desc: DESC[i % 8],
-            url: URL[i % 8],
-            type: TYPES[i % 8],
-            duration: DURS[i % 8],
-            completed: activeCourse
-                ? (activeCourse.progress || 0) >= ((i + 1) / lessonCount) * 100
-                : false,
-        });
-    }
-    var cur = lessons[activeLesson] || lessons[0];
+    // Unified lesson extraction
+    const rawLessons = (activeCourse?.courseId?.modules || activeCourse?.modules || [])
+        .flatMap(mod => mod.lessons || []);
+
+    const lessonCount = rawLessons.length;
+    const lessons = rawLessons.map((l, i) => {
+        const lessonId = l._id || l.id;
+        const statusEntry = lessonStatus?.find(ls =>
+            String(ls.lessonId?._id || ls.lessonId) === String(lessonId) &&
+            String(ls.enrollmentId?._id || ls.enrollmentId) === String(activeCourse._id)
+        );
+
+        return {
+            id: lessonId,
+            title: l.title || "Untitled Lesson",
+            desc: l.description || l.desc || "",
+            url: l.url || "",
+            type: (l.type || "text").toUpperCase(),
+            completed: statusEntry?.status === "completed"
+        };
+    });
+
+    const completedCount = lessons.filter(l => l.completed).length;
+    const progressPercentage = lessons.length > 0
+        ? Math.round((completedCount / lessons.length) * 100)
+        : 0;
+    var cur = lessons[activeLesson] || lessons[0] || {};
+
 
     const course = typeof activeCourse.courseId === "object"
         ? activeCourse.courseId
@@ -185,9 +154,9 @@ function CoursePlayer({ ...props }) {
         );
     });
 
-    var canProgress = introAccepted && instructionsAck;
+    var canProgress = isAdmin || (introAccepted && instructionsAck);
 
-    var checkCompleted = (typeof activeCourse.courseId === "object") && lessonStatus.find((ls) => activeCourse.courseId.modules.some((a) => a.lessons.some((l) => l._id === ls.lessonId._id)) && ls.enrollId.learnerId.userId === currentUser._id)?.lessonId?._id;
+    var checkCompleted = (typeof activeCourse?.courseId === "object") && lessonStatus?.find((ls) => activeCourse?.courseId?.modules?.some((a) => a?.lessons?.some((l) => l?._id === ls?.lessonId?._id)) && ls?.enrollId?.learnerId?.userId === currentUser?._id)?.lessonId?._id;
 
     // If learner hasn't accepted yet, redirect from lessons tab
     function handleLessonTabClick() {
@@ -203,14 +172,26 @@ function CoursePlayer({ ...props }) {
 
 
     function handleMarkComplete() {
-        const lessonStatus = {
-            enrollId: activeCourse._id,
+        if (isAdmin) {
+            notify("Admin Mode: Progress is not saved.");
+            return;
+        }
+
+        const lessonStatusData = {
+            enrollmentId: activeCourse._id,
             lessonId: cur.id,
+            learnerId: activeCourse.learnerId?._id || activeCourse.learnerId,
+            courseId: (activeCourse.courseId?._id || activeCourse.courseId),
+            status: "completed"
         };
 
-        dispatch(createlessonStatus(lessonStatus))
+        dispatch(createlessonStatus(lessonStatusData))
             .then(() => {
                 notify("Marked as Completed successfully!");
+                // Move to next lesson if available
+                if (activeLesson < lessons.length - 1) {
+                    setActiveLesson(activeLesson + 1);
+                }
             })
             .catch((error) => {
                 console.error("Error marking as completed:", error);
@@ -239,8 +220,21 @@ function CoursePlayer({ ...props }) {
     ];
 
     useEffect(() => {
-        dispatch(fetchlessonStatus());
-    }, [dispatch]);
+        if (activeCourse?._id) {
+            dispatch(fetchlessonStatus({ enrollmentId: activeCourse._id }));
+        }
+    }, [dispatch, activeCourse?._id]);
+
+    // Auto-resume logic
+    useEffect(() => {
+        if (!isAdmin && lessons.length > 0 && lessonStatus.length > 0) {
+            // Find first incomplete lesson
+            const firstIncompleteIdx = lessons.findIndex(l => !l.completed);
+            if (firstIncompleteIdx !== -1 && firstIncompleteIdx !== activeLesson) {
+                setActiveLesson(firstIncompleteIdx);
+            }
+        }
+    }, [lessonStatus, isAdmin]);
 
     return (
         <div
@@ -310,7 +304,7 @@ function CoursePlayer({ ...props }) {
                             <div
                                 style={{
                                     height: "100%",
-                                    width: (activeCourse ? activeCourse.progress : 0) + "%",
+                                    width: progressPercentage + "%",
                                     background: p,
                                     borderRadius: 2,
                                 }}
@@ -323,7 +317,7 @@ function CoursePlayer({ ...props }) {
                                 marginTop: 4,
                             }}
                         >
-                            {activeCourse && activeCourse.progress}% complete
+                            {progressPercentage}% complete
                         </div>
                     </div>
                 </div>
@@ -413,50 +407,59 @@ function CoursePlayer({ ...props }) {
                                 <button
                                     key={i}
                                     onClick={function () {
-                                        setActiveLesson(i);
+                                        // Sequential locking: can only click if previous lesson is completed OR if it's the first lesson
+                                        const isPreviousCompleted = i === 0 || lessons[i - 1].completed;
+                                        if (isAdmin || isPreviousCompleted) {
+                                            setActiveLesson(i);
+                                        } else {
+                                            notify("Please complete the previous lesson first.", "error");
+                                        }
                                     }}
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
-                                        gap: 10,
+                                        gap: 12,
                                         width: "100%",
-                                        padding: "10px 10px",
+                                        padding: "12px 14px",
                                         border: "none",
-                                        background: activeLesson === i ? p + "15" : "transparent",
-                                        borderRadius: 8,
-                                        cursor: "pointer",
-                                        marginBottom: 2,
+                                        background: activeLesson === i ? "#10B98115" : "transparent",
+                                        borderRadius: 10,
+                                        cursor: (isAdmin || i === 0 || lessons[i - 1].completed) ? "pointer" : "not-allowed",
+                                        marginBottom: 4,
+                                        opacity: (isAdmin || i === 0 || lessons[i - 1].completed) ? 1 : 0.6,
+                                        transition: "all 0.2s ease",
                                         textAlign: "left",
+                                        borderLeft: activeLesson === i ? `4px solid #10B981` : `4px solid transparent`
                                     }}
                                 >
                                     <div
                                         style={{
-                                            width: 22,
-                                            height: 22,
+                                            width: 24,
+                                            height: 24,
                                             borderRadius: "50%",
                                             background: lesson.completed
                                                 ? "#10B981"
                                                 : activeLesson === i
-                                                    ? p
+                                                    ? "#10B981"
                                                     : "#e2e8f0",
                                             color: "#fff",
                                             display: "flex",
                                             alignItems: "center",
                                             justifyContent: "center",
-                                            fontSize: 9,
+                                            fontSize: 10,
                                             fontWeight: 700,
                                             flexShrink: 0,
+                                            boxShadow: activeLesson === i ? "0 2px 4px rgba(16, 185, 129, 0.2)" : "none"
                                         }}
                                     >
-
                                         {lesson.completed ? "✓" : i + 1}
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div
                                             style={{
-                                                fontSize: 12,
-                                                fontWeight: activeLesson === i ? 700 : 400,
-                                                color: activeLesson === i ? p : "#475569",
+                                                fontSize: 13,
+                                                fontWeight: activeLesson === i ? 700 : 500,
+                                                color: activeLesson === i ? "#059669" : lesson.completed ? "#10B981" : "#475569",
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
                                                 whiteSpace: "nowrap",
@@ -716,9 +719,15 @@ function CoursePlayer({ ...props }) {
                                         type="checkbox"
                                         checked={introAccepted}
                                         onChange={function (e) {
-                                            setIntroAccepted(e.target.checked);
-                                            if (e.target.checked)
+                                            const val = e.target.checked;
+                                            setIntroAccepted(val);
+                                            if (val && !isAdmin) {
+                                                dispatch(updateEnrollment({
+                                                    id: activeCourse._id,
+                                                    updatedData: { introAccepted: true }
+                                                }));
                                                 notify("Introduction acknowledged ✓");
+                                            }
                                         }}
                                         style={{
                                             width: 18,
@@ -942,9 +951,15 @@ function CoursePlayer({ ...props }) {
                                         type="checkbox"
                                         checked={instructionsAck}
                                         onChange={function (e) {
-                                            setInstructionsAck(e.target.checked);
-                                            if (e.target.checked)
+                                            const val = e.target.checked;
+                                            setInstructionsAck(val);
+                                            if (val && !isAdmin) {
+                                                dispatch(updateEnrollment({
+                                                    id: activeCourse._id,
+                                                    updatedData: { instructionsAck: true }
+                                                }));
                                                 notify("Instructions acknowledged ✓");
+                                            }
                                         }}
                                         style={{
                                             width: 18,
@@ -1030,6 +1045,7 @@ function CoursePlayer({ ...props }) {
                                         margin: 0,
                                     }}
                                 >
+
                                     {cur.title}
                                 </h2>
                                 <span style={{ fontSize: 11, color: "#94a3b8" }}>
@@ -1040,26 +1056,29 @@ function CoursePlayer({ ...props }) {
                                 (activeCourse.courseId && typeof activeCourse.courseId === "object" && currentUser.role !== "admin") && (
                                     <button
                                         onClick={() => {
-                                            if (checkCompleted !== cur.id) {
+                                            if (!cur.completed) {
                                                 handleMarkComplete();
                                             }
-                                            notify("Marked complete!");
                                         }}
-                                        disabled={checkCompleted === cur.id}
+                                        disabled={cur.completed || isAdmin}
                                         style={{
-                                            background: checkCompleted === cur.id ? "gray" : "#10B981",
-                                            color: "#fff",
-                                            border: "none",
+                                            background: cur.completed ? "#f1f5f9" : "#10B981",
+                                            color: cur.completed ? "#94a3b8" : "#fff",
+                                            border: cur.completed ? "1px solid #e2e8f0" : "none",
                                             borderRadius: 8,
-                                            padding: "8px 16px",
-                                            fontSize: 13,
-                                            fontWeight: 600,
-                                            cursor: checkCompleted === cur.id ? "not-allowed" : "pointer"
+                                            padding: "10px 20px",
+                                            fontSize: 14,
+                                            fontWeight: 700,
+                                            cursor: (cur.completed || isAdmin) ? "not-allowed" : "pointer",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 8,
+                                            transition: "all 0.2s ease"
                                         }}
                                     >
-                                        ✓ Mark Complete
+                                        {cur.completed ? "✓ Completed" : "Mark Complete"}
                                     </button>
-                                ) 
+                                )
                             }
 
                         </div>
@@ -1073,7 +1092,7 @@ function CoursePlayer({ ...props }) {
                                 justifyContent: "center",
                             }}
                         >
-                            {cur.type === "VIDEO" && (
+                            {cur?.type === "VIDEO" && (
                                 <div
                                     style={{
                                         width: "100%",
@@ -1114,7 +1133,7 @@ function CoursePlayer({ ...props }) {
                                     )}
                                 </div>
                             )}
-                            {cur.type === "PDF" && (
+                            {cur?.type === "PDF" && (
                                 <div
                                     style={{
                                         background: "#fff",
@@ -1153,7 +1172,7 @@ function CoursePlayer({ ...props }) {
                                     </button>
                                 </div>
                             )}
-                            {cur.type === "TEXT" && (
+                            {cur?.type === "TEXT" && (
                                 <div
                                     style={{
                                         background: "#fff",
@@ -1172,6 +1191,7 @@ function CoursePlayer({ ...props }) {
                                             color: "#0f172a",
                                         }}
                                     >
+
                                         {cur.title}
                                     </h3>
                                     <p

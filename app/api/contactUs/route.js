@@ -1,14 +1,25 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import contactUs from "@/app/api/model/contactUs";
+import ContactUs from "@/models/contactUs";
 import { sendContactUsEmail } from "@/lib/nodemailer";
 
-export async function GET() {
+export async function GET(req) {
   try {
     await dbConnect();
-    const contactus = await contactUs.find()
-    const mapped = contactus.map((c) => ({
-      ...c.toObject(),
+    const { searchParams } = new URL(req.url);
+    const tenantId = searchParams.get("tenantId");
+    const status = searchParams.get("status");
+
+    const query = {};
+    if (tenantId) query.tenantId = tenantId;
+    if (status) query.status = status;
+
+    const contacts = await ContactUs.find(query)
+      .populate("assignedTo", "name email")
+      .lean();
+
+    const mapped = contacts.map(c => ({
+      ...c,
       id: c._id.toString(),
     }));
     return NextResponse.json(mapped);
@@ -22,7 +33,22 @@ export async function POST(req) {
   await dbConnect();
   try {
     const data = await req.json();
-    const contactus = await contactUs.create(data);
+    const { tenantId, firstName, lastName, email, phone, company, jobTitle, message, source } = data;
+
+    const contactData = {
+      firstName,
+      lastName,
+      email,
+      phone: phone || null,
+      company: company || null,
+      jobTitle: jobTitle || null,
+      message: message || null,
+      source: source || "website",
+      tenantId,
+      status: "new",
+    };
+
+    const contact = await ContactUs.create(contactData);
 
     let emailSent = false;
     let emailError = null;
@@ -36,8 +62,8 @@ export async function POST(req) {
     }
 
     return NextResponse.json({
-      ...contactus.toObject(),
-      id: contactus._id.toString(),
+      ...contact.toObject(),
+      id: contact._id.toString(),
       emailSent,
       emailError,
     });

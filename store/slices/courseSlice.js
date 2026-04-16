@@ -164,7 +164,7 @@ const courseSlice = createSlice({
         const updatedCourse = action.payload;
 
         const index = state.Course.findIndex(
-          (course) => course._id === updatedCourse._id,
+          (course) => (course?._id || course?.id) === (updatedCourse?._id || updatedCourse?.id),
         );
 
         if (index !== -1) {
@@ -239,7 +239,7 @@ const courseSlice = createSlice({
       })
       .addCase(deleteCourse.fulfilled, (state, action) => {
         state.loading = false;
-        state.Course = state.Course.filter((c) => c._id !== action.payload);
+        state.Course = state.Course.filter((c) => (c._id || c.id) !== action.payload);
       })
       .addCase(deleteCourse.rejected, (state, action) => {
         state.loading = false;
@@ -252,7 +252,7 @@ const courseSlice = createSlice({
         state.loading = false;
         const updatedCourse = action.payload;
         const index = state.Course.findIndex(
-          (course) => course._id === updatedCourse._id
+          (course) => (course?._id || course?.id) === (updatedCourse?._id || updatedCourse?.id)
         );
 
         if (index !== -1) {

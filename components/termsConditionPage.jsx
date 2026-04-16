@@ -1,5 +1,5 @@
 import React from 'react';
-import { GLOBAL_CSS } from '../app/globalCss';
+import { GLOBAL_CSS } from '@/utils/globalCss';
 import { useRouter } from 'next/navigation';
 
 function TermsAndConditions({ ...props }) {
