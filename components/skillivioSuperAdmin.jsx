@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { TIER_DATA } from "../app/mockData";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { TIER_DATA } from "@/utils/mockData";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import Toast from "./toast";
 import StatCard from "./statCard";
 import TierDemoView from "./tierDemoView";
@@ -38,10 +38,10 @@ function SkillivioSuperAdmin({ ...props }) {
 
 
     // var tenantList = Object.values(tenants);
-    var totalMRR = tenants?.filter(function (t) { return t.status === "Active"; }).reduce(function (s, t) { return s + t.mrr; }, 0);
-    var totalLrn = Enrollment?.filter((enrol)=> enrol._id).length;
-    var active = tenants?.filter(function (t) { return t.status === "Active"; }).length;
-    var pending = tenants?.filter(function (t) { return t.status === "Pending"; }).length;
+    var totalMRR = tenants?.filter(function (t) { return t.status === "active"; }).reduce(function (s, t) { return s + t.mrr; }, 0);
+    var totalLrn = Enrollment?.filter((enrol) => enrol._id).length;
+    var active = tenants?.filter(function (t) { return t.status === "active"; }).length;
+    var pending = tenants?.filter(function (t) { return t.status === "pending"; }).length;
 
     var tierColor = { foundation: "#10B981", professional: "#7C3AED", enterprise: "#0EA5E9" };
 
@@ -92,7 +92,7 @@ function SkillivioSuperAdmin({ ...props }) {
             phone: form.phone || "",
             qctoNo: form.qctoNo || "",
             seta: form.seta || "",
-            status: "Pending",
+            status: "pending",
             setupDate: new Date().toISOString().split("T")[0]
         };
 
@@ -109,7 +109,7 @@ function SkillivioSuperAdmin({ ...props }) {
     }
 
     var SB_ITEMS = [
-        { id: "tenants", icon: "🏢", label: "Tenants", badge: tenants.filter(tenant=> tenant.slug!=="skillivio")?.length },
+        { id: "tenants", icon: "🏢", label: "Tenants", badge: tenants.filter(tenant => tenant.slug !== "skillivio")?.length },
         { id: "tiers", icon: "📦", label: "Tier" },
         { id: "analytics", icon: "📊", label: "Global Analytics" },
         { id: "billing", icon: "💳", label: "Billing" },
@@ -123,7 +123,7 @@ function SkillivioSuperAdmin({ ...props }) {
         var invNo = "SKIL-INV-" + new Date().getFullYear() + "-" + String(Math.floor(Math.random() * 9000) + 1000);
         var issueDate = new Date().toLocaleDateString("en-ZA");
         var dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString("en-ZA");
-        var tierLabels = { foundation: "Foundation", professional: "Professional", enterprise: "Enterprise" };
+        var tierLabels = { foundation: "foundation", professional: "professional", enterprise: "enterprise" };
         var tierAmts = { foundation: 1490, professional: 2990, enterprise: 5490 };
         var monthly = tierAmts[t.tier] || 1490;
         var vat = Math.round(monthly * 0.15);
@@ -214,7 +214,7 @@ function SkillivioSuperAdmin({ ...props }) {
                         <div style={{ background: "#f0fdf4", borderRadius: 10, padding: "16px 18px", border: "1px solid #86efac", marginBottom: 20 }}>
                             <div style={{ fontWeight: 700, fontSize: 13, color: "#166534", marginBottom: 10 }}>Payment Details</div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                                {[["Bank", "First National Bank (FNB)"], ["Account Name", "Skillivio Digital Learning Solutions (Pty) Ltd"], ["Account No", "62 0000 0000"], ["Branch Code", "250655"], /*["PayShap ID", "@skillivio"],*/ ["Reference", t.slug + "-" + new Date().getFullYear() + "-" + (new Date().getMonth() + 1)]].map(function (pair) {
+                                {[["Bank", "First National Bank (FNB)"], ["Account Name", "Skillivio Digital Learning Solutions (Pty) Ltd"], ["Account No", "62 0000 0000"], ["Branch Code", "250655"], /*["PayShap ID", "@skillivio"],*/["Reference", t.slug + "-" + new Date().getFullYear() + "-" + (new Date().getMonth() + 1)]].map(function (pair) {
                                     return (
                                         <div key={pair[0]} style={{ fontSize: 12 }}>
                                             <span style={{ color: "#64748b" }}>{pair[0]}: </span>
@@ -375,8 +375,8 @@ function SkillivioSuperAdmin({ ...props }) {
                                                 <td style={{ padding: "12px" }}><span style={{ background: t.status === "Active" ? "#10B98118" : "#FEF3C7", color: t.status === "Active" ? "#10B981" : "#92400E", borderRadius: 100, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{t.status}</span></td>
                                                 <td style={{ padding: "12px" }}>
                                                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                                        {t.status === "Active" && <button onClick={function () { setCurrentTenant(t.slug); setView("admin"); setUserRole("TENANT_ADMIN"); notify("Viewing " + t.name); }} style={{ background: SKP, color: "#fff", border: "none", borderRadius: 6, padding: "6px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>View</button>}
-                                                        {t.status === "Pending" && <button onClick={function () { activate(t.id); }} style={{ background: "#10B981", color: "#fff", border: "none", borderRadius: 6, padding: "6px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>✓ Activate</button>}
+                                                        {t.status === "active" && <button onClick={function () { setCurrentTenant(t.slug); setView("admin"); setUserRole("TENANT_ADMIN"); notify("Viewing " + t.name); }} style={{ background: SKP, color: "#fff", border: "none", borderRadius: 6, padding: "6px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>View</button>}
+                                                        {t.status === "pending" && <button onClick={function () { activate(t.id); }} style={{ background: "#10B981", color: "#fff", border: "none", borderRadius: 6, padding: "6px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>✓ Activate</button>}
                                                         <button onClick={function () { setEditingTenant(t); setShowEditForm(true); notify("Editing " + t.name); }} style={{ background: "none", border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", fontSize: 11, cursor: "pointer" }}>Edit</button>
                                                     </div>
                                                 </td>

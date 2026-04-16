@@ -1,7 +1,7 @@
 "use client";
 import React, { Suspense } from "react";
 import PrivacyContent from "@/components/privacyPolicyPage";
-import { TENANTS } from "../mockData";
+import { TENANTS } from "@/utils/mockData";
 import { useSearchParams } from "next/navigation";
 
 function PrivacyPage() {

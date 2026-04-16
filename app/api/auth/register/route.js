@@ -1,7 +1,7 @@
 import dbConnect from "@/lib/mongoose";
-import User from "@/app/api/model/user";
-import Tenant from "@/app/api/model/tenant";
-import Learner from "@/app/api/model/learner";
+import User from "@/models/user";
+import Tenant from "@/models/tenant";
+import Learner from "@/models/learner";
 
 export async function POST(req) {
   try {

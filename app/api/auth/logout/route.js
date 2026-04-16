@@ -1,5 +1,5 @@
 import dbConnect from "@/lib/mongoose";
-import Session from "@/app/api/model/session";
+import Session from "@/models/session";
 import { verifyRefreshToken } from "@/lib/jwt";
 import { cookies } from "next/headers";
 import { handleAuthError } from "@/lib/auth";

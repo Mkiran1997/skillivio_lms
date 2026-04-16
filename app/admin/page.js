@@ -3,11 +3,11 @@ import LandingPage from "@/components/landingPage";
 import { fetchtenants } from "@/store/slices/tenantSlice";
 import { Suspense, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { COURSES, TENANTS } from "../mockData";
+import { COURSES, TENANTS } from "@/utils/mockData";
 import { useSearchParams } from "next/navigation";
-import { useTheme } from "../utility";
+import { useTheme } from "@/utils/utility";
 import LoginPage from "@/components/loginPage";
-import { createCourses, updateCourse, updateCourseStatus } from "@/store/slices/courseSlice";
+import { createCourses, fetchCourses, updateCourse, updateCourseStatus } from "@/store/slices/courseSlice";
 import ContactUsPage from "@/components/contactUsPage";
 import SkillivioSuperAdmin from "@/components/skillivioSuperAdmin";
 import LearnerPortal from "@/components/learnerPortal";
@@ -105,7 +105,7 @@ function Admin() {
     var [newCourse, setNewCourse] = useState({
         title: "",
         cat: "Technology",
-        level: "BEGINNER",
+        level: "beginner",
         nqf: 4,
         credits: 10,
         price: "",
@@ -185,7 +185,7 @@ function Admin() {
 
     function publishCourse(id, currentStatus) {
         // Determine new status
-        const newStatus = currentStatus === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
+        const newStatus = currentStatus === "published" ? "draft" : "published";
         // Update server via API (Redux thunk)
         dispatch(updateCourseStatus({ id, status: newStatus }))
             .unwrap()
@@ -194,13 +194,13 @@ function Admin() {
                 notify("Status updated");
             })
             .catch((err) => {
-                notify("Failed to update status: " + err.error || err.message);
+                notify("Failed to update status: " + (err.error || err.message));
             });
     }
     var BLANK_COURSE = {
         title: "",
         cat: "Technology",
-        level: "BEGINNER",
+        level: "beginner",
         nqf: 4,
         credits: 10,
         price: "",
@@ -228,7 +228,7 @@ function Admin() {
             setNewCourse({
                 title: course.title || "",
                 cat: course.cat || "Technology",
-                level: course.level || "BEGINNER",
+                level: course.level || "beginner",
                 nqf: course.nqf || 4,
                 credits: course.credits || 10,
                 price: course.price || "",
@@ -260,7 +260,7 @@ function Admin() {
                         {
                             id: "l_" + Date.now(),
                             title: "Welcome & Overview",
-                            type: "VIDEO",
+                            type: "video",
                             desc: "",
                             url: "",
                         },
@@ -329,6 +329,7 @@ function Admin() {
             modules: courseModules,
             lessons: totalLessons,
             setaAffiliation: newCourse.setaAffiliation,
+            tenantId: currentUser.tenantId._id || currentUser.tenantId,
             type:
                 currentUser.tenantId.slug === "acme"
                     ? "acme"
@@ -341,7 +342,7 @@ function Admin() {
             if (editingCourse) {
                 // Update existing course
                 await dispatch(
-                    updateCourse({ id: editingCourse._id, updatedData: courseData }),
+                    updateCourse({ id: editingCourse?._id || editingCourse?.id, updatedData: courseData }),
                 );
                 notify(`"${title}" updated successfully!`);
             } else {
@@ -357,7 +358,7 @@ function Admin() {
             setCourseModules([]);
             setActiveModuleIdx(null);
         } catch (error) {
-            notify("Error saving course: " + error.message, "error");
+            notify(error.error || "Error saving course: " + error.message, "error");
         }
     }
 
@@ -388,6 +389,7 @@ function Admin() {
             dripEnabled: newCourse.dripEnabled || false,
             modules: courseModules,
             lessons: totalLessons,
+            tenantId: currentUser.tenantId._id || currentUser.tenantId,
             type:
                 currentUser.tenantId.slug === "acme"
                     ? "acme"
@@ -520,7 +522,7 @@ function Admin() {
 
     if (authChecking) {
         return (
-            <Splash/>
+            <Splash />
         );
     }
     if (view === "landing")

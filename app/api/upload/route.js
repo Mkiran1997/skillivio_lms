@@ -1,44 +1,49 @@
-// app/api/upload/route.js
+import { NextResponse } from "next/server";
+import { uploadToS3 } from "@/lib/s3";
 
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { NextResponse } from 'next/server';
-
-// Set up Multer storage
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      const uploadDir = path.join(process.cwd(), 'public/uploads');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true }); // Create directory if it doesn't exist
-      }
-      cb(null, uploadDir); // Store the file in 'public/uploads'
-    },
-    filename: function (req, file, cb) {
-      cb(null, Date.now() + path.extname(file.originalname)); // Generate a unique filename
-    },
-  }),
-});
-
-// POST handler for file upload
+/**
+ * API Route to handle generic file uploads to S3
+ * Supports Images, PDF, Video, Audio, and Text
+ */
 export async function POST(req) {
-  // Multer middleware needs to handle the request and the response
-  return new Promise((resolve, reject) => {
-    upload.single('file')(req, {}, (err) => {
-      if (err) {
-        // If there's an error during the upload, reject with an error message
-        return reject(new NextResponse(JSON.stringify({ error: 'File upload failed', details: err.message }), { status: 500 }));
-      }
+  try {
+    const formData = await req.formData();
+    const file = formData.get("file");
 
-      if (!req.file) {
-        // If no file was uploaded
-        return reject(new NextResponse(JSON.stringify({ error: 'No file uploaded' }), { status: 400 }));
-      }
+    if (!file) {
+      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    }
 
-      // File uploaded successfully, construct the file URL
-      const uploadedFileUrl = `/uploads/${req.file.filename}`;
-      return resolve(new NextResponse(JSON.stringify({ url: uploadedFileUrl }), { status: 200 }));
+    // Optional: Get folder from form data
+    const folder = formData.get("folder") || "general";
+
+    // Validate file type if necessary
+    const allowedTypes = [
+      "image/jpeg", "image/png", "image/gif", "image/webp",
+      "application/pdf",
+      "video/mp4", "video/mpeg", "video/quicktime",
+      "audio/mpeg", "audio/wav", "audio/ogg",
+      "text/plain", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: "File type not supported" }, { status: 400 });
+    }
+
+    // Convert file to Buffer for S3 upload
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Upload to S3 using our common function
+    const s3Url = await uploadToS3(buffer, file.name, file.type, folder);
+
+    return NextResponse.json({
+      success: true,
+      url: s3Url,
+      fileName: file.name,
+      fileType: file.type
     });
-  });
+  } catch (err) {
+    console.error("Upload Route Error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

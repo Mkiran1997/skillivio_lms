@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { QUESTIONS } from "../app/mockData";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { QUESTIONS } from "@/utils/mockData";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import Toast from "./toast";
 import AssessmentTimer from "./assessmentTimer";
 

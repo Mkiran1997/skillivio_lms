@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { TIER_DATA } from "../app/mockData";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { TIER_DATA } from "@/utils/mockData";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 
 
 

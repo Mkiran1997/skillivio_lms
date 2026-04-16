@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { GLOBAL_CSS } from '../app/globalCss';
+import { GLOBAL_CSS } from '@/utils/globalCss';
 import Toast from './toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { createcontactUs, fetchcontactUs } from '@/store/slices/contactUsSlice';

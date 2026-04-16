@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ENROLMENT_STORE } from "../app/mockData";
-import { GLOBAL_CSS } from "../app/globalCss";
+import { ENROLMENT_STORE } from "@/utils/mockData";
+import { GLOBAL_CSS } from "@/utils/globalCss";
 import { useDispatch, useSelector } from "react-redux";
 import { createEnrollment } from "@/store/slices/enrollmentSlice";
 import { fetchCourses } from "@/store/slices/courseSlice";
@@ -43,7 +43,7 @@ function EnrolmentForm({ ...props }) {
     var today = new Date().toISOString().split("T")[0];
     const [selectedCourse, setSelectedCourse] = useState("")
     const [selectedLearner, setSelectedLearner] = useState("")
-    const AdminCourse = Course.filter((course) => course.type === learnerUser?.tenantId.slug && course.status === "PUBLISHED")
+    const AdminCourse = Course.filter((course) => course.type === learnerUser?.tenantId.slug && course.status === "published")
     const tierLearner = Learners.filter(
         (l) => l.userId.tenantId.slug === learnerUser.tenantId.slug,
     );
@@ -197,6 +197,7 @@ function EnrolmentForm({ ...props }) {
         const enrollmentRecord = {
             courseId: course ? course._id : selectedCourseDetail._id, // ObjectId of course
             learnerId: course ? Learners.find((learner) => learner.userId._id === learnerUser._id)._id : selectedLearnerData._id, // ObjectId of learner
+            tenantId: learnerUser?.tenantId?._id || learnerUser?.tenantId, // ID of tenant
             saqaId: secA.saqaId,
             intakeNo: secA.intakeNo,
             startDate: secA.startDate ? new Date(secA.startDate) : new Date(),

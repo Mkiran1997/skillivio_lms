@@ -1,7 +1,7 @@
 // app/api/courses/[id]/route.js
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
-import bankDetail from "@/app/api/model/bankDetail";
+import bankDetail from "@/models/bankDetail";
 
 export async function GET(req, { params }) {
   try {
