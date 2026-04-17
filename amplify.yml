@@ -7,6 +7,17 @@ frontend:
     build:
       commands:
         - echo "MONGODB_URI=$MONGODB_URI" >> .env.production
+        - echo "SMTP_HOST=$SMTP_HOST" >> .env.production
+        - echo "SMTP_PORT=$SMTP_PORT" >> .env.production
+        - echo "SMTP_USER=$SMTP_USER" >> .env.production
+        - echo "SMTP_PASS=$SMTP_PASS" >> .env.production
+        - echo "EMAIL_TO=$EMAIL_TO" >> .env.production
+        - echo "ACCESS_TOKEN_SECRET=$ACCESS_TOKEN_SECRET" >> .env.production
+        - echo "REFRESH_TOKEN_SECRET=$REFRESH_TOKEN_SECRET" >> .env.production
+        - echo "SKILLIVIO_AWS_REGION=$SKILLIVIO_AWS_REGION" >> .env.production
+        - echo "SKILLIVIO_AWS_ACCESS_KEY_ID=$SKILLIVIO_AWS_ACCESS_KEY_ID" >> .env.production
+        - echo "SKILLIVIO_AWS_SECRET_ACCESS_KEY=$SKILLIVIO_AWS_SECRET_ACCESS_KEY" >> .env.production
+        - echo "SKILLIVIO_AWS_S3_BUCKET_NAME=$SKILLIVIO_AWS_S3_BUCKET_NAME" >> .env.production
         - npm run build
   artifacts:
     baseDirectory: .next
