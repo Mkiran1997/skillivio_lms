@@ -284,35 +284,25 @@ function Admin() {
             0,
         );
 
-        // Validate modules and lessons before sending to the backend
+        // Validate modules and lessons
         for (const module of courseModules) {
             if (!module.moduleName) {
                 notify("Module name is required.", "error");
                 return;
             }
-
             if (!module.lessons || module.lessons.length === 0) {
                 notify("Each module should have at least one lesson.", "error");
                 return;
             }
-
             for (const lesson of module.lessons) {
                 if (!lesson.title) {
                     notify("Each lesson should have a title.", "error");
                     return;
                 }
-
-                if (!lesson.type) {
-                    notify(
-                        "Each lesson should have a type (e.g., VIDEO, TEXT).",
-                        "error",
-                    );
-                    return;
-                }
             }
         }
 
-        // Construct courseData with the full module object
+        // 1. Prepare JSON data
         const courseData = {
             title: title,
             cat: newCourse.cat,
@@ -322,42 +312,80 @@ function Admin() {
             desc: newCourse.desc || "",
             price: newCourse.free ? 0 : Number(newCourse.price) || 0,
             free: newCourse.free,
-            thumb: newCourse.thumb || "📘",
+            thumb: typeof newCourse.thumb === "string" ? newCourse.thumb : "📘",
             saqaId: newCourse.saqaId || "",
             passingScore: Number(newCourse.passingScore) || 75,
             dripEnabled: newCourse.dripEnabled || false,
-            modules: courseModules,
+            modules: courseModules.map(m => ({
+                ...m,
+                lessons: m.lessons.map(l => {
+                    // Strip the file object from JSON to avoid circular/large payload issues
+                    const { file, ...lessonRest } = l;
+                    return lessonRest;
+                })
+            })),
             lessons: totalLessons,
             setaAffiliation: newCourse.setaAffiliation,
             tenantId: currentUser.tenantId._id || currentUser.tenantId,
-            type:
-                currentUser.tenantId.slug === "acme"
-                    ? "acme"
-                    : currentUser.tenantId.slug === "techpro"
-                        ? "techpro"
-                        : "skillivio",
+            type: currentUser.tenantId.slug === "acme" ? "acme" :
+                currentUser.tenantId.slug === "techpro" ? "techpro" : "skillivio",
         };
+
+        // 2. Check for files and prepare payload
+        const hasFiles = !!newCourse.thumbFile || !!newCourse.previewVideoFile ||
+            (newCourse.materialsFiles && newCourse.materialsFiles.some(mObj => mObj && mObj.file instanceof File)) ||
+            courseModules.some(m => m.lessons?.some(l => l.file instanceof File));
+
+        let payload = courseData;
+
+        if (hasFiles) {
+            const fd = new FormData();
+            fd.append("data", JSON.stringify(courseData));
+
+            if (newCourse.thumbFile) fd.append("thumb", newCourse.thumbFile);
+            if (newCourse.previewVideoFile) fd.append("previewVideo", newCourse.previewVideoFile);
+
+            courseModules.forEach((m, mi) => {
+                m.lessons?.forEach((l, li) => {
+                    if (l.file instanceof File) {
+                        fd.append(`lesson_file_${mi}_${li}`, l.file);
+                    }
+                });
+            });
+
+            // Append course materials
+            if (newCourse.materialsFiles && Array.isArray(newCourse.materialsFiles)) {
+                newCourse.materialsFiles.forEach((mObj, mIdx) => {
+                    if (mObj && mObj.file instanceof File) {
+                        fd.append(`material_file_${mIdx}`, mObj.file);
+                        fd.append(`material_name_${mIdx}`, mObj.name || mObj.file.name);
+                        fd.append(`material_desc_${mIdx}`, mObj.desc || "");
+                    }
+                });
+            }
+
+            payload = fd;
+        }
 
         try {
             if (editingCourse) {
-                // Update existing course
-                await dispatch(
-                    updateCourse({ id: editingCourse?._id || editingCourse?.id, updatedData: courseData }),
-                );
+                await dispatch(updateCourse({
+                    id: editingCourse?._id || editingCourse?.id,
+                    updatedData: payload
+                })).unwrap();
                 notify(`"${title}" updated successfully!`);
             } else {
-                // Create a new course
-                await dispatch(createCourses(courseData));
+                await dispatch(createCourses(payload)).unwrap();
                 notify(`"${title}" created! Ready to publish.`);
             }
 
-            // Reset state after saving
             setCourseBuilderOpen(false);
             setEditingCourse(null);
             setNewCourse(BLANK_COURSE);
             setCourseModules([]);
             setActiveModuleIdx(null);
         } catch (error) {
+            console.error("Save error:", error);
             notify(error.error || "Error saving course: " + error.message, "error");
         }
     }

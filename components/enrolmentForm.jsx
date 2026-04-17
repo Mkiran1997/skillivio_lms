@@ -88,6 +88,18 @@ function EnrolmentForm({ ...props }) {
     }
 
 
+    function handleFileUpload(e, key) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setDocs((prev) => ({
+            ...prev,
+            [key]: file,
+        }));
+
+        notify(file.name + " uploaded!");
+    }
+
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(fetchCourses());
@@ -148,6 +160,7 @@ function EnrolmentForm({ ...props }) {
     }, [selectedCourseDetail, course]);
 
     function handleSubmit() {
+        console.log(docs);
         // Check for selected learner
         if (!selectedLearner) {
             if (!secB.fullName) {
@@ -195,9 +208,9 @@ function EnrolmentForm({ ...props }) {
 
         // Construct the enrollment record
         const enrollmentRecord = {
-            courseId: course ? course._id : selectedCourseDetail._id, // ObjectId of course
-            learnerId: course ? Learners.find((learner) => learner.userId._id === learnerUser._id)._id : selectedLearnerData._id, // ObjectId of learner
-            tenantId: learnerUser?.tenantId?._id || learnerUser?.tenantId, // ID of tenant
+            courseId: course ? course._id : selectedCourseDetail?._id,
+            learnerId: course ? Learners.find((learner) => learner.userId?._id === learnerUser?._id)?._id : selectedLearnerData?._id,
+            tenantId: learnerUser?.tenantId?._id || learnerUser?.tenantId,
             saqaId: secA.saqaId,
             intakeNo: secA.intakeNo,
             startDate: secA.startDate ? new Date(secA.startDate) : new Date(),
@@ -205,7 +218,7 @@ function EnrolmentForm({ ...props }) {
             mode: secA.mode,
             personal: {
                 ...secB,
-                fullname: course ? secB.fullName : tierLearner.find((learner) => learner.id === selectedLearner)?.userId.name, // Use selected learner's name if course is undefined
+                fullname: course ? secB.fullName : (selectedLearnerData?.userId?.name || secB.fullName),
             },
             employment: { ...secC },
             enteyRequest: [...secD],
@@ -216,18 +229,38 @@ function EnrolmentForm({ ...props }) {
             declaration: { ...secF },
             popia: { ...secG },
             provider: { ...secH },
-            docs: { ...docs },
             submittedAt: new Date(),
         };
 
-        // Dispatch the enrollment record
-        dispatch(createEnrollment(enrollmentRecord));
+        // Create FormData to send files and data together
+        const formData = new FormData();
+        formData.append("data", JSON.stringify(enrollmentRecord));
 
-        // Handle submission and async behavior
+        // Map frontend doc keys to backend doc keys and attach files
+        const keyMap = {
+            certifiedId: "certifiedId",
+            highestQual: "highestQualification",
+            cv: "cv",
+            studyPermit: "studyPermit",
+            workplaceConf: "workplaceConfirmation",
+            entryAssessment: "entryAssessmentRecord"
+        };
+
+        Object.keys(docs).forEach(key => {
+            if (docs[key] instanceof File) {
+                const backendKey = keyMap[key] || key;
+                formData.append(`doc_${backendKey}`, docs[key]);
+            }
+        });
+
+        // Dispatch the FormData
+        dispatch(createEnrollment(formData));
+
+        // Handle submission feedback
         setTimeout(() => {
             setSubmitting(false);
             onSubmit(enrollmentRecord);
-        }, 700);
+        }, 1500); // Slightly longer for file uploads
     }
 
     function SH(sp) {
@@ -594,12 +627,69 @@ function EnrolmentForm({ ...props }) {
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                                 {Object.keys(DOC_LABELS).map(function (key) {
                                     return (
-                                        <div key={key} style={{ padding: "14px", background: docs[key] ? "#F0FDF4" : "#F8FAFC", borderRadius: 10, border: "1.5px solid " + (docs[key] ? "#86EFAC" : "#E2E8F0") }}>
-                                            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>{DOC_LABELS[key]}</div>
-                                            {docs[key]
-                                                ? <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span>✅</span><span style={{ fontSize: 11, color: "#15803D", fontWeight: 600 }}>{docs[key]}</span><button onClick={function () { setDocs(function (d) { var n = { ...d }; n[key] = null; return n; }); }} style={{ marginLeft: "auto", background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}>✕</button></div>
-                                                : <button onClick={function () { fakeUpload(key); }} style={{ background: p, color: "#fff", border: "none", borderRadius: 6, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", width: "100%", marginTop: 4 }}>⬆ Upload File</button>
-                                            }
+                                        <div
+                                            key={key}
+                                            style={{
+                                                padding: "14px",
+                                                background: docs[key] ? "#F0FDF4" : "#F8FAFC",
+                                                borderRadius: 10,
+                                                border: "1.5px solid " + (docs[key] ? "#86EFAC" : "#E2E8F0")
+                                            }}
+                                        >
+                                            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>
+                                                {DOC_LABELS[key]}
+                                            </div>
+
+                                            {docs[key] ? (
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                    <span>✅</span>
+                                                    <span style={{ fontSize: 11, color: "#15803D", fontWeight: 600 }}>
+                                                        {docs[key]?.name}
+                                                    </span>
+                                                    <button
+                                                        onClick={function () {
+                                                            setDocs(function (d) {
+                                                                var n = { ...d };
+                                                                n[key] = null;
+                                                                return n;
+                                                            });
+                                                        }}
+                                                        style={{
+                                                            marginLeft: "auto",
+                                                            background: "none",
+                                                            border: "none",
+                                                            color: "#94a3b8",
+                                                            cursor: "pointer"
+                                                        }}
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <label
+                                                    style={{
+                                                        background: p,
+                                                        color: "#fff",
+                                                        border: "none",
+                                                        borderRadius: 6,
+                                                        padding: "7px 12px",
+                                                        fontSize: 12,
+                                                        fontWeight: 600,
+                                                        cursor: "pointer",
+                                                        width: "100%",
+                                                        display: "block",
+                                                        textAlign: "center",
+                                                        marginTop: 4
+                                                    }}
+                                                >
+                                                    ⬆ Upload File
+                                                    <input
+                                                        type="file"
+                                                        onChange={(e) => handleFileUpload(e, key)}
+                                                        style={{ display: "none" }}
+                                                    />
+                                                </label>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -640,11 +730,11 @@ function EnrolmentForm({ ...props }) {
                                             </div> */}
                                             {/* EFT */}
                                             <div style={{ background: "#FEF9C3", borderRadius: 10, padding: "14px", border: "2px solid #FDE68A", cursor: "pointer" }}
-                                                onClick={function () { notify("EFT banking details sent to your email!"); }}>
+                                                onClick={function () { notify("banking details sent to your email!"); }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                                                     <span style={{ fontSize: 20 }}>🏦</span>
                                                     <div>
-                                                        <div style={{ fontWeight: 800, fontSize: 13, color: "#92400E" }}>EFT Transfer</div>
+                                                        <div style={{ fontWeight: 800, fontSize: 13, color: "#92400E" }}> Transfer</div>
                                                         <div style={{ fontSize: 10, color: "#F59E0B", fontWeight: 600 }}>1–2 business days</div>
                                                     </div>
                                                 </div>

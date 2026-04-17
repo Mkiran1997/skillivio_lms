@@ -20,7 +20,8 @@ export async function GET(req) {
     const learners = await Learner.find(query)
       .populate({
         path: "userId",
-        select: "-password"
+        select: "-password",
+        populate: { path: "tenantId" }
       })
       .populate({
         path: "cohortId"
