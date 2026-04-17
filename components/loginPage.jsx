@@ -15,7 +15,7 @@ function LoginPage({ ...props }) {
     var [loading, setLoading] = useState(false);
     var [focused, setFocused] = useState("");
 
-    const { User } = useSelector(state => state.user);
+    const { User } = useSelector(state => state.auth);
     const dispatch = useDispatch();
 
 

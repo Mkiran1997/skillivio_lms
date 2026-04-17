@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Provider } from "react-redux";
-import { makeStore, AppStore } from "@/store/store";
+import { makeStore } from "@/store/store";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 
 export function Providers({ children }) {
-  // const storeRef = useRef({ ...AppStore });
-  // const [, forceRender] = useState(0);
-  // useEffect(() => {
-  //   if (!storeRef.current) {
-  //     storeRef.current = makeStore();
-  //     forceRender((n) => n + 1);
-  //   }
-  // }, [])
-  // if (!storeRef.current) return null;
-
   const [store] = useState(() => makeStore());
 
-
-  return <Provider store={store}>{children}</Provider>;
+  return (
+    <Provider store={store}>
+      <AuthProvider>
+        <ThemeProvider>
+          <NotificationProvider>{children}</NotificationProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </Provider>
+  );
 }

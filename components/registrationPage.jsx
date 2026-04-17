@@ -22,7 +22,7 @@ function RegisterPage({ ...props }) {
     const [focused, setFocused] = useState("");
 
     const dispatch = useDispatch();
-    const { User } = useSelector(state => state.user);
+    const { User } = useSelector(state => state.auth);
 
     useEffect(() => {}, [dispatch]);
 

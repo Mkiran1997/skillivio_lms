@@ -1,3 +1,5 @@
+
+
 export const TENANTS = {
     skillivio: { slug: "skillivio", name: "Skillivio", primary: "#2FBF71", secondary: "#2E3044", accent: "#F4A800", logo: "S", tagline: "Learn. Evolve. Succeed.", plan: "ENTERPRISE" },
     acme: { slug: "acme", name: "ACME Training Academy", primary: "#7C3AED", secondary: "#1E1B4B", accent: "#F59E0B", logo: "A", tagline: "Building Skills. Building Futures.", plan: "PROFESSIONAL" },

@@ -8,7 +8,7 @@ import learnersReducer from "./slices/learnerSlice";
 import bankdetailReducer from "./slices/bankDetailSlice";
 import tenantReducer from "./slices/tenantSlice";
 import enrollmentReducer from "./slices/enrollmentSlice";
-import userReducer from "./slices/authSlice";
+
 import lessonStatusReducer from "./slices/lessonStatusSlice";
 import uploadReducer from './slices/uploadSlice';
 import contactusReducer from "./slices/contactUsSlice";
@@ -24,7 +24,7 @@ export const makeStore = () => {
       bankdetail:bankdetailReducer,
       tenants:tenantReducer,
       enrollment:enrollmentReducer,
-      user:userReducer,
+
       lessonStatus:lessonStatusReducer,
       upload:uploadReducer,
       contactUs:contactusReducer,

@@ -712,7 +712,7 @@ function AdminDashboard({ ...props }) {
                         onChange={function (e) {
                           var v = e?.target?.value;
                           setNewCourse(function (n) {
-                            return { ...n, cat: v };
+                            return { ...n,  cat: v };
                           });
                         }}
                       >
@@ -2071,6 +2071,7 @@ function AdminDashboard({ ...props }) {
                 </thead>
                 <tbody>
                   {coursesPag.slice.map(function (course) {
+                    console.log("Course:", course);
                     const enrolled = Enrollment.filter((enrollment) => enrollment?.courseId?._id === course?.id).length;
                     return (
                       <tr
