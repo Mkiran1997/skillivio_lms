@@ -456,11 +456,11 @@ function SkillivioSuperAdmin({ ...props }) {
                 {tab === "billing" && (
                     <div className="fade">
                         <h1 style={{ fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "0 0 24px" }}>Billing & Revenue</h1>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(,1fr)", gap: 16, marginBottom: 24 }}>
                             <StatCard icon="💰" value={"R" + totalMRR.toLocaleString()} label="Total MRR" color={SKP} />
                             <StatCard icon="📈" value={"R" + (totalMRR * 12).toLocaleString()} label="ARR (Projected)" color="#10B981" />
                             <StatCard icon="🏢" value={active + "/" + tenants.length} label="Active / Total" color="#6366F1" />
-                            <StatCard icon="⏳" value={pending || 0} label="Pending EFTs" color="#F59E0B" />
+                            {/* <StatCard icon="⏳" value={pending || 0} label="Pending EFTs" color="#F59E0B" /> */}
                         </div>
 
                         {/* ── Skillivio banking details for SDP client billing ── */}
@@ -469,7 +469,7 @@ function SkillivioSuperAdmin({ ...props }) {
                                 <span style={{ fontSize: 22 }}>🏦</span>
                                 <div>
                                     <div style={{ fontWeight: 800, fontSize: 16, color: "#0f172a" }}>Skillivio Billing Bank Account</div>
-                                    <div style={{ fontSize: 12, color: "#64748b" }}>SDP clients pay their monthly retainer to this account via PayShap or EFT</div>
+                                    {/* <div style={{ fontSize: 12, color: "#64748b" }}>SDP clients pay their monthly retainer to this account via PayShap or EFT</div> */}
                                 </div>
                             </div>
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 14 }}>
@@ -498,7 +498,7 @@ function SkillivioSuperAdmin({ ...props }) {
                                         Instant real-time clearing. SDP sends monthly retainer from any SA bank using PayShap ID @skillivio with their tenant reference as payment description.
                                     </div>
                                 </div> */}
-                                <div style={{ background: "#FEF9C3", borderRadius: 8, padding: "12px 16px", border: "1px solid #FDE68A" }}>
+                                {/* <div style={{ background: "#FEF9C3", borderRadius: 8, padding: "12px 16px", border: "1px solid #FDE68A" }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                                         <span style={{ fontSize: 18 }}>🏦</span>
                                         <span style={{ fontWeight: 700, fontSize: 14, color: "#92400E" }}>EFT (Manual Verification)</span>
@@ -506,7 +506,7 @@ function SkillivioSuperAdmin({ ...props }) {
                                     <div style={{ fontSize: 12, color: "#92400E", lineHeight: 1.7 }}>
                                         Standard bank transfer. Reflects in 1–2 business days. SDP must use their slug (e.g. &apos;acme-retainer-march2026&quot;) as reference. Admin verifies and marks paid.
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
 

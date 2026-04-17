@@ -38,7 +38,7 @@ const lessonSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    enum: ["video", "text", "assessment", "document", "interactive"],
+    enum: ["video", "text", "assessment", "document", "interactive", "pdf", "image", "audio"],
     default: "text",
     index: true
   },
@@ -125,4 +125,7 @@ lessonSchema.index({ moduleId: 1, order: 1 }, { unique: true });
 lessonSchema.index({ courseId: 1, type: 1 });
 lessonSchema.index({ tenantId: 1, isPublished: 1 });
 
-export default mongoose.models.Lesson || mongoose.model("Lesson", lessonSchema);
+if (mongoose.models.Lesson) {
+  delete mongoose.models.Lesson;
+}
+export default mongoose.model("Lesson", lessonSchema);

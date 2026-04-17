@@ -25,12 +25,11 @@ export const createEnrollment = createAsyncThunk(
     "enrollment/createEnrollment",
     async (enrollmentData, { rejectWithValue }) => {
         try {
+            const isFormData = enrollmentData instanceof FormData;
             const response = await fetch(API_URL, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(enrollmentData),
+                headers: isFormData ? {} : { "Content-Type": "application/json" },
+                body: isFormData ? enrollmentData : JSON.stringify(enrollmentData),
             });
             if (!response.ok) {
                 const errorData = await response.json();
@@ -48,10 +47,11 @@ export const updateEnrollment = createAsyncThunk(
     "enrollment/updateEnrollment",
     async ({ id, updatedData }, { rejectWithValue }) => {
         try {
+            const isFormData = updatedData instanceof FormData;
             const response = await fetch(`/api/enrollment/${id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updatedData),
+                headers: isFormData ? {} : { "Content-Type": "application/json" },
+                body: isFormData ? updatedData : JSON.stringify(updatedData),
             });
 
             if (!response.ok) {

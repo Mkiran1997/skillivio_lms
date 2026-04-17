@@ -73,6 +73,7 @@ function AdminDashboard({ ...props }) {
   const fileInputRef = useRef(null);
   const [selectedLessonType, setSelectedLessonType] = useState("TEXT");
   var [activeLearner, setActiveLearner] = useState(null);
+  const [preiewDoc, setPreiewDoc] = useState(null);
 
   const dispatch = useDispatch();
 
@@ -276,28 +277,28 @@ function AdminDashboard({ ...props }) {
     Enrollment.forEach(function (rec) {
       var docKeys = [
         "certifiedId",
-        "highestQual",
+        "highestQualification",
         "cv",
         "studyPermit",
-        "workplaceConf",
-        "entryAssessment",
+        "workplaceConfirmation",
+        "entryAssessmentRecord",
       ];
       var uploaded = docKeys.filter(function (k) {
-        return rec.docs && rec.docs[k];
+        return rec.documents && rec.documents[k];
       }).length;
       rows.push([
-        (rec.personal && rec?.personal?.fullName) || "",
-        (rec.personal && rec?.personal?.idNumber) || "",
-        (rec.personal && rec?.personal?.email) || "",
-        (rec.course && rec?.course?.title) || "",
-        (rec && rec?.nqfLevel) || "",
-        (rec.secA && rec?.secA?.credits) || "",
-        (rec.secA && rec?.secA?.saqaId) || "",
-        (rec.secA && rec?.secA?.intakeNo) || "",
-        (rec.secA && rec?.secA?.startDate) || "",
-        (rec.secA && rec?.secA?.mode) || "",
-        rec.secG && rec?.secG?.consent ? "Yes" : "No",
-        rec.secF && rec?.secF?.agreed ? "Yes" : "No",
+        rec?.learnerId?.userId?.name || "",
+        rec?.learnerId?.demographics?.idNumber || "",
+        rec?.learnerId?.userId?.email || "",
+        rec?.courseId?.title || "",
+        rec?.qualification?.nqfLevel || rec?.courseId?.nqf || "",
+        rec?.qualification?.credits || rec?.courseId?.credits || "",
+        rec?.qualification?.saqaId || "",
+        rec?.qualification?.intakeNumber || "",
+        rec?.qualification?.startDate || "",
+        rec?.qualification?.deliveryMode || "",
+        rec?.popiaConsent?.granted ? "Yes" : "No",
+        rec?.declaration?.agreed ? "Yes" : "No",
         uploaded + "/" + docKeys?.length,
         rec?.submittedAt || "",
       ]);
@@ -1342,8 +1343,8 @@ function AdminDashboard({ ...props }) {
                                             if (!file) return;
 
                                             // Create a temporary local URL for previewing
-                                            var previewUrl =
-                                              URL.createObjectURL(file);
+                                            // var previewUrl =
+                                            //   URL.createObjectURL(file);
 
                                             setCourseModules(function (ms) {
                                               return ms?.map(function (m, i) {
@@ -1357,7 +1358,7 @@ function AdminDashboard({ ...props }) {
                                                           ...l,
                                                           file: file,
                                                           tempName: file.name,
-                                                          url: previewUrl, // Set the preview URL here
+                                                          url: "", // Set the preview URL here
                                                         }
                                                         : l;
                                                     },
@@ -1377,7 +1378,7 @@ function AdminDashboard({ ...props }) {
                                               paddingLeft: 5,
                                             }}
                                           >
-                                            Current File: {les?.url}
+                                            Current File:
                                             <a
                                               href={les?.url}
                                               target="_blank"
@@ -1735,6 +1736,109 @@ function AdminDashboard({ ...props }) {
                   </div>
                 </div>
               </div>
+
+              {/* ── SECTION D: COURSE MATERIALS ── */}
+              <div
+                style={{
+                  background: "#f8fafc",
+                  borderRadius: 12,
+                  padding: "20px 22px",
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <div style={css.label}>Course Materials (Optional)</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
+                  Upload downloadable resources like PDFs, PPTs, or ZIP files for learners.
+                </div>
+                
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+                    if (!files.length) return;
+                    setNewCourse(n => ({
+                      ...n,
+                      materialsFiles: [
+                        ...(n.materialsFiles || []),
+                        ...files.map(f => ({ file: f, name: f.name, desc: "" }))
+                      ]
+                    }));
+                    e.target.value = null; // reset input
+                  }}
+                  style={{ marginBottom: 12 }}
+                />
+                
+                {/* List chosen files to upload */}
+                {newCourse?.materialsFiles && newCourse.materialsFiles.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {newCourse.materialsFiles.map((mObj, idx) => (
+                      <div key={idx} style={{ background: "#fff", padding: "12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700 }}>📎 {mObj.file.name} ({Math.round(mObj.file.size / 1024)} KB)</span>
+                          <button
+                            onClick={() => {
+                              setNewCourse(n => ({
+                                ...n,
+                                materialsFiles: n.materialsFiles.filter((_, i) => i !== idx)
+                              }));
+                            }}
+                            style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontWeight: 700 }}
+                          >✕ Remove</button>
+                        </div>
+                        
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                          <div>
+                            <input 
+                              style={{ ...css.input, padding: "8px 12px", fontSize: 12 }}
+                              placeholder="Material Title (Optional Override)"
+                              value={mObj.name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setNewCourse(n => {
+                                  const updated = [...n.materialsFiles];
+                                  updated[idx] = { ...updated[idx], name: val };
+                                  return { ...n, materialsFiles: updated };
+                                });
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <textarea 
+                              style={{ ...css.input, padding: "8px 12px", fontSize: 12, minHeight: 50 }}
+                              placeholder="Description (Optional)"
+                              value={mObj.desc}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setNewCourse(n => {
+                                  const updated = [...n.materialsFiles];
+                                  updated[idx] = { ...updated[idx], desc: val };
+                                  return { ...n, materialsFiles: updated };
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Existing DB Materials (if editing) */}
+                {editingCourse && editingCourse.materials && editingCourse.materials.length > 0 && (
+                  <div style={{ marginTop: 16, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#64748b", marginBottom: 10 }}>Already Uploaded Materials</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {editingCourse.materials.map((m, idx) => (
+                        <div key={idx} style={{ background: "#f1f5f9", padding: "12px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13 }}>
+                          <div style={{ fontWeight: 600 }}>🔗 {m.filename || 'Material'} ({m.size || 'Unknown'})</div>
+                          {m.desc && <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{m.desc}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* ── Footer buttons ── */}
@@ -1789,7 +1893,7 @@ function AdminDashboard({ ...props }) {
                 </button>
               )}
               <button
-                onClick={editingCourse ? saveCourse : createCourse}
+                onClick={saveCourse}
                 disabled={!newCourse?.title}
                 style={{
                   ...css.btn(p),
@@ -2266,12 +2370,13 @@ function AdminDashboard({ ...props }) {
                 <tbody>
                   {learnersPag?.slice?.map(function (learner) {
                     const Enrolled = Enrollment?.filter(
-                      (enroll) => enroll?.learnerId?.userId === learner?.userId?._id,
+                      (enroll) => enroll?.learnerId?.userId?._id === learner?.userId?._id,
                     )?.length;
                     const completedCoursesCount = Enrollment?.filter(
-                      (enroll) => enroll?.learnerId?.userId === learner?.userId?._id
+                      (enroll) => enroll?.learnerId?.userId?._id === learner?.userId?._id
                     ).reduce((count, enroll) => {
                       const course = enroll.courseId;
+
 
                       // 👉 Total lessons in course
                       const totalLessons =
@@ -2293,9 +2398,9 @@ function AdminDashboard({ ...props }) {
                       return count;
                     }, 0);
                     const userCourses = Enrollment.filter(
-                      (enroll) => enroll?.learnerId?.userId === learner?.userId?._id,
+                      (enroll) => enroll?.learnerId?.userId?._id === learner?.userId?._id,
                     ).reduce((prev, enroll) => {
-                      const userId = enroll?.learnerId?.userId?.toString();
+                      const userId = enroll?.learnerId?.userId?._id?.toString();
 
                       if (!prev[userId]) {
                         prev[userId] = {
@@ -2316,6 +2421,8 @@ function AdminDashboard({ ...props }) {
                       courses: [],
                       totalCredits: 0,
                     };
+
+                    console.log(currentUser)
                     return (
                       <tr
                         key={learner?.id}
@@ -2689,26 +2796,26 @@ function AdminDashboard({ ...props }) {
               enrolPag?.slice?.map(function (rec, i) {
                 var docKeys = [
                   "certifiedId",
-                  "highestQual",
+                  "highestQualification",
                   "cv",
                   "studyPermit",
-                  "workplaceConf",
-                  "entryAssessment",
+                  "workplaceConfirmation",
+                  "entryAssessmentRecord",
                 ];
                 var docLabels = {
                   certifiedId: "Certified ID",
-                  highestQual: "Highest Qual",
+                  highestQualification: "Highest Qual",
                   cv: "CV",
                   studyPermit: "Study Permit",
-                  workplaceConf: "Workplace Conf",
-                  entryAssessment: "Entry Assessment",
+                  workplaceConfirmation: "Workplace Conf",
+                  entryAssessmentRecord: "Entry Assessment",
                 };
                 var uploaded = docKeys?.filter(function (k) {
-                  return rec?.docs && rec?.docs[k];
+                  return rec?.documents && rec?.documents[k];
                 }).length;
                 var outstanding = docKeys
                   ?.filter(function (k) {
-                    return !rec?.docs || !rec?.docs[k];
+                    return !rec?.documents || !rec?.documents[k];
                   })
                   .map(function (k) {
                     return docLabels[k];
@@ -2725,7 +2832,7 @@ function AdminDashboard({ ...props }) {
                     >
                       <div>
                         <div style={{ fontWeight: 800, fontSize: 15 }}>
-                          {(rec?.personal && rec?.personal?.fullName) || "—"}
+                          {rec?.learnerId?.userId?.name || "—"}
                         </div>
                         <div
                           style={{
@@ -2734,8 +2841,8 @@ function AdminDashboard({ ...props }) {
                             marginTop: 2,
                           }}
                         >
-                          {rec?.personal && rec?.personal?.idNumber} •{" "}
-                          {rec?.personal && rec?.personal?.email}
+                          {rec?.learnerId?.demographics?.idNumber || "No ID"} •{" "}
+                          {rec?.learnerId?.userId?.email || "No Email"}
                         </div>
                         <div
                           style={{
@@ -2746,8 +2853,8 @@ function AdminDashboard({ ...props }) {
                           }}
                         >
                           {rec?.courseId && rec?.courseId?.title} — NQF{" "}
-                          {rec?.courseId && rec?.courseId?.nqf} •{" "}
-                          {rec?.courseId && rec?.courseId?.credits} Credits
+                          {rec?.qualification?.nqfLevel || rec?.courseId?.nqf} •{" "}
+                          {rec?.qualification?.credits || rec?.courseId?.credits} Credits
                         </div>
                       </div>
                       <span style={{ ...css.tag("#10B981") }}>✓ Submitted</span>
@@ -2761,15 +2868,15 @@ function AdminDashboard({ ...props }) {
                       }}
                     >
                       {[
-                        ["SAQA ID", (rec && rec?.saqaId) || "—"],
-                        ["Intake", (rec && rec?.intakeNo) || "—"],
+                        ["SAQA ID", rec?.qualification?.saqaId || "—"],
+                        ["Intake", rec?.qualification?.intakeNumber || "—"],
                         [
                           "POPIA",
-                          rec?.popia && rec?.popia?.consent ? "✓ Yes" : "⚠ No",
+                          rec?.popiaConsent?.granted ? "✓ Yes" : "⚠ No",
                         ],
                         [
                           "Approved",
-                          (rec?.provider && rec?.provider?.approved) || "—",
+                          rec?.provider?.learnerApproved ? "✓ Yes" : "⚠ No",
                         ],
                       ].map(function (pair) {
                         return (
@@ -2818,10 +2925,11 @@ function AdminDashboard({ ...props }) {
                         style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
                       >
                         {docKeys?.map(function (key) {
-                          var has = rec.docs && rec.docs[key];
+                          var has = rec.documents && rec.documents[key];
                           return (
                             <span
                               key={key}
+                              onClick={() => has && setPreiewDoc(has)}
                               style={{
                                 background: has ? "#10B98118" : "#FEF3C7",
                                 color: has ? "#10B981" : "#92400E",
@@ -2831,6 +2939,7 @@ function AdminDashboard({ ...props }) {
                                 padding: "3px 10px",
                                 fontSize: 11,
                                 fontWeight: 600,
+                                cursor: has ? "pointer" : "default",
                               }}
                             >
                               {has ? "✓" : "⚠"} {docLabels[key]}
@@ -2949,8 +3058,8 @@ function AdminDashboard({ ...props }) {
           <div className="fade">
             <h1 style={{ ...css.h1, marginBottom: 4 }}>Payments & Orders</h1>
             <p style={{ color: "#64748b", fontSize: 14, marginBottom: 20 }}>
-              South African payment methods —{/* PayShap instant transfer and */}EFT
-              bank deposit. Zero transaction fees.
+              South African payment {/*smethods — PayShap instant transfer and */}
+              {/* EFT bank deposit. Zero transaction fees. */}
             </p>
 
             {/* ── Stat cards ── */}
@@ -3016,9 +3125,9 @@ function AdminDashboard({ ...props }) {
                       Billing Bank Account
                     </span>
                   </div>
-                  <span style={{ fontSize: 12, color: "#94a3b8" }}>
-                    Learners make payment to this account for EFT {/*and PayShap*/}
-                  </span>
+                  {/* <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                    Learners make payment to this account for EFT and PayShap
+                  </span> */}
                 </div>
 
                 {/* Edit / Save button */}
@@ -3218,7 +3327,7 @@ function AdminDashboard({ ...props }) {
               </div> */}
 
               {/* EFT */}
-              <div style={{ ...css.card, border: "2px solid #F59E0B30" }}>
+              {/* <div style={{ ...css.card, border: "2px solid #F59E0B30" }}>
                 <div
                   style={{
                     display: "flex",
@@ -3307,7 +3416,7 @@ function AdminDashboard({ ...props }) {
                   <div>⚠ Admin must verify and activate enrolment</div>
                   <div>⚠ Learner must upload proof of payment</div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* ── Recent transactions ── */}
@@ -3330,14 +3439,14 @@ function AdminDashboard({ ...props }) {
                   >
                     ⚡ PayShap
                   </span> */}
-                  <span
+                  {/* <span
                     style={{ ...css.tag("#F59E0B"), cursor: "pointer" }}
                     onClick={function () {
                       notify("Filtered: EFT");
                     }}
                   >
                     🏦 EFT
-                  </span>
+                  </span> */}
                   <span
                     style={{ ...css.tag("#10B981"), cursor: "pointer" }}
                     onClick={function () {
@@ -3467,7 +3576,7 @@ function AdminDashboard({ ...props }) {
             </div>
 
             {/* ── Pending EFT alerts ── */}
-            <div
+            {/* <div
               style={{
                 ...css.card,
                 marginTop: 16,
@@ -3528,7 +3637,7 @@ function AdminDashboard({ ...props }) {
                   ✓ Mark Paid
                 </button>
               </div>
-            </div>
+            </div> */}
           </div>
         )}
 
@@ -3860,6 +3969,101 @@ function AdminDashboard({ ...props }) {
             // openCourse(enrollingCourse);
           }}
         />
+      )}
+      {preiewDoc && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.85)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            backdropFilter: "blur(4px)",
+          }}
+          onClick={() => setPreiewDoc(null)}
+        >
+          <div
+            style={{
+              position: "relative",
+              width: "900px",
+              height: "90vh",
+              background: "#fff",
+              borderRadius: "16px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              overflow: "hidden",
+              animation: "modalFadeIn 0.3s ease-out",
+              display: "flex",
+              flexDirection: "column",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <style>
+              {`
+                @keyframes modalFadeIn {
+                  from { opacity: 0; transform: scale(0.95); }
+                  to { opacity: 1; transform: scale(1); }
+                }
+              `}
+            </style>
+            <div
+              style={{
+                padding: "16px 24px",
+                borderBottom: "1px solid #f1f5f9",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "#f8fafc",
+              }}
+            >
+              <span style={{ fontWeight: 700, color: "#0f172a" }}>Document Preview</span>
+              <button
+                onClick={() => setPreiewDoc(null)}
+                style={{
+                  background: "#e2e8f0",
+                  color: "#475569",
+                  border: "none",
+                  borderRadius: "8px",
+                  width: 32,
+                  height: 32,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 16,
+                  fontWeight: 600,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => (e.target.style.background = "#cbd5e1")}
+                onMouseLeave={(e) => (e.target.style.background = "#e2e8f0")}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ overflow: "auto", maxHeight: "calc(95vh - 64px)", padding: "20px", display: "flex", justifyContent: "center" }}>
+              {preiewDoc.toLowerCase().includes(".pdf") ? (
+                <iframe
+                  src={preiewDoc}
+                  style={{ width: "80vw", height: "80vh", border: "none", borderRadius: "8px" }}
+                />
+              ) : (
+                <img
+                  src={preiewDoc}
+                  alt="Document Preview"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "80vh",
+                    display: "block",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

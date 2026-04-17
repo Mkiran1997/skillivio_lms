@@ -6,6 +6,36 @@ import Course from "@/models/course";
 import Module from "@/models/module";
 import Lesson from "@/models/lesson";
 import { ObjectId } from "mongoose";
+import { uploadEnrollmentDocument } from "@/lib/s3";
+
+async function handleRequestData(req, enrollmentId) {
+  const contentType = req.headers.get("content-type") || "";
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await req.formData();
+    const dataString = formData.get("data");
+    const data = dataString ? JSON.parse(dataString) : {};
+
+    // Handle documents in the 'documents' object
+    const docFields = [
+      "certifiedId", "highestQualification", "cv", "studyPermit",
+      "workplaceConfirmation", "entryAssessmentRecord", "proofOfPayment"
+    ];
+
+    for (const field of docFields) {
+      const file = formData.get(`doc_${field}`);
+      if (file && typeof file !== "string") {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const s3Url = await uploadEnrollmentDocument(buffer, enrollmentId.toString(), file.name, file.type);
+        
+        if (!data.documents) data.documents = {};
+        data.documents[field] = s3Url;
+      }
+    }
+
+    return data;
+  }
+  return await req.json();
+}
 
 export async function GET(req, { params }) {
   try {
@@ -32,7 +62,7 @@ export async function PUT(req, { params }) {
   try {
     await dbConnect();
     const { id } = await params;
-    const data = await req.json();
+    const data = await handleRequestData(req, id);
     
     const updateData = {
       ...(data.status && { status: data.status }),

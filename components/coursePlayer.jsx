@@ -52,6 +52,7 @@ function CoursePlayer({ ...props }) {
 
     const lessonCount = rawLessons.length;
     const lessons = rawLessons.map((l, i) => {
+        // console.log();
         const lessonId = l._id || l.id;
         const statusEntry = lessonStatus?.find(ls =>
             String(ls.lessonId?._id || ls.lessonId) === String(lessonId) &&
@@ -62,7 +63,7 @@ function CoursePlayer({ ...props }) {
             id: lessonId,
             title: l.title || "Untitled Lesson",
             desc: l.description || l.desc || "",
-            url: l.url || "",
+            url: l.url || l?.content?.video?.url || l?.content?.document?.url || "",
             type: (l.type || "text").toUpperCase(),
             completed: statusEntry?.status === "completed"
         };
@@ -80,72 +81,7 @@ function CoursePlayer({ ...props }) {
         : activeCourse
 
     // Course materials list (simulated — in production fetched from API)
-    var MATERIALS = [
-        {
-            id: "m1",
-            name: "Course Study Guide.pdf",
-            type: "PDF",
-            size: "2.4 MB",
-            icon: "📄",
-            desc: "Complete study guide covering all modules",
-        },
-        {
-            id: "m2",
-            name: "Learner Workbook.pdf",
-            type: "PDF",
-            size: "1.8 MB",
-            icon: "📓",
-            desc: "Exercises and activities workbook",
-        },
-        {
-            id: "m3",
-            name: "Reference Manual.pdf",
-            type: "PDF",
-            size: "3.1 MB",
-            icon: "📋",
-            desc: "QCTO reference and compliance manual",
-        },
-        {
-            id: "m4",
-            name: "Module Slides — Unit 1.pptx",
-            type: "PPTX",
-            size: "5.6 MB",
-            icon: "📊",
-            desc: "Presentation slides for Module 1",
-        },
-        {
-            id: "m5",
-            name: "Module Slides — Unit 2.pptx",
-            type: "PPTX",
-            size: "4.9 MB",
-            icon: "📊",
-            desc: "Presentation slides for Module 2",
-        },
-        {
-            id: "m6",
-            name: "Assessment Criteria.pdf",
-            type: "PDF",
-            size: "0.9 MB",
-            icon: "✅",
-            desc: "QCTO assessment criteria and marking rubric",
-        },
-        {
-            id: "m7",
-            name: "PoE Guidelines.pdf",
-            type: "PDF",
-            size: "1.2 MB",
-            icon: "📁",
-            desc: "Portfolio of Evidence submission guidelines",
-        },
-        {
-            id: "m8",
-            name: "Workplace Logbook Template.xlsx",
-            type: "XLSX",
-            size: "0.4 MB",
-            icon: "📋",
-            desc: "Log your workplace activities here",
-        },
-    ];
+    var MATERIALS = course?.materials || [];
     var filteredMats = MATERIALS.filter(function (m) {
         return (
             !matSearch ||
@@ -198,6 +134,22 @@ function CoursePlayer({ ...props }) {
                 notify("There was an error marking as completed.");
             });
     }
+
+    const getIcon = (type) => {
+        if (!type) return "📄";
+
+        const t = type.toUpperCase();
+
+        if (t.includes("PDF")) return "📕";
+        if (t.includes("PPT")) return "📊";
+        if (t.includes("XLS")) return "📗";
+        if (t.includes("DOC")) return "📄";
+        if (t.includes("ZIP")) return "🗂";
+        if (t.includes("VIDEO")) return "🎥";
+        if (t.includes("AUDIO")) return "🎧";
+
+        return "📁"; // default
+    };
 
     var NAV_TABS = [
         { id: "intro", label: "📖 Introduction", badge: introAccepted ? "✓" : "!" },
@@ -1106,14 +1058,17 @@ function CoursePlayer({ ...props }) {
                                     }}
                                 >
                                     {cur.url ? (
-                                        <video
-                                            controls
-                                            key={cur.url} // Key forces video to reload when URL changes
-                                            style={{ width: "100%", height: "100%" }}
-                                        >
-                                            <source src={cur.url} type="video/mp4" />
-                                            Your browser does not support the video tag.
-                                        </video>
+                                        console.log(cur.url),
+                                        <iframe src={cur.url} style={{ width: "100%", height: "100%" }} title="Iframe Example"></iframe>
+
+                                        // <video
+                                        //     controls
+                                        //     key={cur.url} // Key forces video to reload when URL changes
+                                        //     style={{ width: "100%", height: "100%" }}
+                                        // >
+                                        //     <source src={cur.url} type="video/mp4" />
+                                        //     Your browser does not support the video tag.
+                                        // </video>
                                     ) : (
                                         <div style={{ textAlign: "center", color: "#fff" }}>
                                             <div style={{ fontSize: 64, marginBottom: 16 }}>🎥</div>
@@ -1133,43 +1088,36 @@ function CoursePlayer({ ...props }) {
                                     )}
                                 </div>
                             )}
+                            {cur?.type === "AUDIO" && (
+                                <div style={{ background: "#fff", borderRadius: 16, padding: "40px", maxWidth: 500, width: "100%", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", textAlign: "center", border: "1px solid #f1f5f9" }}>
+                                    <div style={{ fontSize: 64, marginBottom: 20 }}>🎧</div>
+                                    <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Audio Lesson</h3>
+                                    <p style={{ fontSize: 14, color: "#64748b", marginBottom: 24 }}>Listen to the audio content below</p>
+                                    {cur.url ? (
+                                        <audio
+                                            controls
+                                            key={cur.url} // Force reload on URL change
+                                            style={{ width: "100%", height: 40 }}
+                                        >
+                                            <source src={cur.url} type="audio/mpeg" />
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    ) : (
+                                        <div style={{ color: "#ef4444", fontSize: 13, fontWeight: 600 }}>No audio file available</div>
+                                    )}
+                                </div>
+                            )}
                             {cur?.type === "PDF" && (
-                                <div
-                                    style={{
-                                        background: "#fff",
-                                        borderRadius: 12,
-                                        padding: "40px",
-                                        maxWidth: 600,
-                                        width: "100%",
-                                        boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    <div style={{ fontSize: 64, marginBottom: 16 }}>📄</div>
-                                    <div
-                                        style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}
-                                    >
-                                        PDF Resource
-                                    </div>
-                                    <div style={{ color: "#64748b", marginBottom: 20 }}>
-                                        Download and review this lesson material
-                                    </div>
-                                    <button
-                                        onClick={function () {
-                                            notify("PDF downloaded!");
-                                        }}
-                                        style={{
-                                            background: p,
-                                            color: "#fff",
-                                            border: "none",
-                                            borderRadius: 8,
-                                            padding: "10px 24px",
-                                            fontWeight: 600,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        ⬇ Download PDF
-                                    </button>
+                                <div style={{ width: "100%", height: "100%", background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+                                    {cur.url ? (
+                                        <iframe src={cur.url} style={{ width: "100%", height: "100%", border: "none" }} title="PDF Preview"></iframe>
+                                    ) : (
+                                        <div style={{ padding: "40px", textAlign: "center" }}>
+                                            <div style={{ fontSize: 64, marginBottom: 16 }}>📄</div>
+                                            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>PDF Resource</div>
+                                            <div style={{ color: "#64748b" }}>No PDF file available for this lesson.</div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {cur?.type === "TEXT" && (
@@ -1322,7 +1270,7 @@ function CoursePlayer({ ...props }) {
                                                 : "#6366F1";
                                 return (
                                     <div
-                                        key={mat.id}
+                                        key={mat._id}
                                         style={{
                                             background: "#fff",
                                             borderRadius: 12,
@@ -1347,7 +1295,7 @@ function CoursePlayer({ ...props }) {
                                                 flexShrink: 0,
                                             }}
                                         >
-                                            {mat.icon}
+                                            {getIcon(mat.fileType || mat.type)}
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div
@@ -1380,35 +1328,35 @@ function CoursePlayer({ ...props }) {
                                                     gap: 8,
                                                 }}
                                             >
-                                                <span
-                                                    style={{
-                                                        background: typeColor + "18",
-                                                        color: typeColor,
-                                                        borderRadius: 4,
-                                                        padding: "2px 8px",
-                                                        fontSize: 10,
-                                                        fontWeight: 700,
-                                                    }}
-                                                >
-                                                    {mat.type}
-                                                </span>
+
                                                 <span style={{ fontSize: 11, color: "#94a3b8" }}>
                                                     {mat.size}
                                                 </span>
                                                 <button
-                                                    onClick={function () {
-                                                        notify("Downloading: " + mat.name);
-                                                    }}
-                                                    style={{
-                                                        marginLeft: "auto",
-                                                        background: p,
-                                                        color: "#fff",
-                                                        border: "none",
-                                                        borderRadius: 6,
-                                                        padding: "5px 14px",
-                                                        fontSize: 11,
-                                                        fontWeight: 700,
-                                                        cursor: "pointer",
+                                                    onClick={async function () {
+                                                        if (!mat.url) {
+                                                            notify("File not available", "error");
+                                                            return;
+                                                        }
+
+                                                        try {
+                                                            notify("Downloading: " + (mat.name || mat.filename));
+                                                            const response = await fetch(mat.url);
+                                                            const blob = await response.blob();
+                                                            const blobUrl = window.URL.createObjectURL(blob);
+
+                                                            const link = document.createElement("a");
+                                                            link.href = blobUrl;
+                                                            link.download = mat.name || mat.filename || "material";
+                                                            document.body.appendChild(link);
+                                                            link.click();
+                                                            document.body.removeChild(link);
+
+                                                            window.URL.revokeObjectURL(blobUrl); // Clean up
+                                                        } catch (error) {
+                                                            console.error("Download failed:", error);
+                                                            notify("Download failed. Please try again.", "error");
+                                                        }
                                                     }}
                                                 >
                                                     ⬇ Download

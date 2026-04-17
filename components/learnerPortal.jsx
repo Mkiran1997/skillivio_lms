@@ -26,7 +26,7 @@ function LearnerPortal({ ...props }) {
     }, [dispatch]);
 
     const userEnrollment = useMemo(() => {
-        return Enrollment.filter((enroll) => enroll?.learnerId?.userId === currentUser?._id)
+        return Enrollment.filter((enroll) => enroll?.learnerId?.userId?._id === currentUser?._id)
     }, [Enrollment, currentUser])
 
 
@@ -34,7 +34,7 @@ function LearnerPortal({ ...props }) {
     const [uploadedFilesByCourse, setUploadedFilesByCourse] = useState({});
     var [enrollingCourse, setEnrolling] = useState(null);
     var [myEnrolments, setMyEnrolments] = useState([]);
-    var myCourses = Enrollment.filter((enrol) => enrol?.learnerId?.userId === currentUser?._id);
+    var myCourses = Enrollment.filter((enrol) => enrol?.learnerId?.userId?._id === currentUser?._id);
     var browseable = Course.filter(function (c) { return c?.status === "published" && currentUser?.tenantId?.slug === c?.type });
     var browsePag = usePagination(browseable, 6);
     var myCourPag = usePagination(myCourses, 4);
@@ -274,7 +274,7 @@ function LearnerPortal({ ...props }) {
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 18 }}>
                             {browsePag.slice.map(function (course) {
-                                const isEnrolling = Enrollment.some((enrol) => enrol.courseId._id === course.id && enrol.learnerId?.userId === currentUser._id);
+                                const isEnrolling = Enrollment.some((enrol) => enrol.courseId._id === course.id && enrol.learnerId?.userId?._id === currentUser._id);
                                 return (
                                     <div key={course.id} style={{ ...css.card, padding: 0, overflow: "hidden", cursor: "pointer", transition: "all 0.2s" }}
                                         onMouseEnter={function (e) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 28px rgba(0,0,0,0.12)"; }}
@@ -293,9 +293,9 @@ function LearnerPortal({ ...props }) {
                                                     <div style={{ fontSize: 16, fontWeight: 800, color: course.free ? "#10B981" : p }}>
                                                         {course.free ? "FREE" : "R" + course.price}
                                                     </div>
-                                                    {!course.free && (
+                                                    {/* {!course.free && (
                                                         <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}> EFT</div>
-                                                    )}
+                                                    )} */}
                                                 </div>
                                                 <button
                                                     onClick={function () { setEnrolling(course); }}

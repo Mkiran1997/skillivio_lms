@@ -9,12 +9,15 @@ function AssessmentView({ ...props }) {
     //     activeCourse = props.activeCourse, notification = props.notification,
     //     setAssessSubmitted = props.setAssessSubmitted, setView = props.setView;
 
-    const { css, p, s, tenant, activeCourse, notification, setAssessSubmitted, setView } = props;
+    const { css, p, s, tenant, activeCourse, notification, setAssessSubmitted, setView, currentUser } = props;
+
+    // Fetch enrollments from Redux to grab the enrollmentId
+    const { Enrollment } = require("react-redux").useSelector(state => state.enrollment);
 
     var [sub, setSub] = useState(null);
     var [ans, setAns] = useState({});
 
-    function handleSubmit(timedOut  ) {
+    async function handleSubmit(timedOut) {
         var score = 0, total = 0;
         QUESTIONS.forEach(function (q) {
             total += q.points;
@@ -23,9 +26,42 @@ function AssessmentView({ ...props }) {
             if (q.type === "TRUE_FALSE" && av === q.correct) score += q.points;
             if (q.type === "SHORT_ANSWER" && av && av.toLowerCase().indexOf("stakeholder") >= 0) score += q.points;
         });
-        var result   = { score: score, total: total, pct: Math.round(score / total * 100), timedOut: !!timedOut };
+        
+        var pct = Math.round(score / total * 100);
+        var result = { score: score, total: total, pct: pct, timedOut: !!timedOut };
         setAssessSubmitted(result);
         setSub(result);
+
+        var passing = activeCourse ? activeCourse.nqf >= 5 ? 75 : 70 : 75;
+        if (pct >= passing) {
+            // They passed! Create a DB certificate record
+            const userEnroll = Enrollment.find(e => 
+                (e?.learnerId?.userId === currentUser?._id || e?.learnerId?.userId?._id === currentUser?._id) && 
+                (e?.courseId?._id === activeCourse?.id || e?.courseId?._id === activeCourse?._id)
+            );
+
+            if (userEnroll) {
+                try {
+                    await fetch('/api/certificates', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            enrollmentId: userEnroll._id,
+                            learnerId: userEnroll.learnerId?._id || userEnroll.learnerId,
+                            courseId: activeCourse?.id || activeCourse?._id,
+                            tenantId: tenant._id || tenant.id,
+                            learnerName: currentUser?.name || "Student",
+                            courseName: activeCourse?.title || "Course",
+                            finalScore: pct,
+                            nqfLevel: activeCourse?.nqf || 1,
+                            credits: activeCourse?.credits || 10
+                        })
+                    });
+                } catch (error) {
+                    console.error("Failed to generate certificate", error);
+                }
+            }
+        }
     }
 
     var passing = activeCourse ? activeCourse.nqf >= 5 ? 75 : 70 : 75;

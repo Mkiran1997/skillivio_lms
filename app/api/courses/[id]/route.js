@@ -5,6 +5,7 @@ import Module from "@/models/module";
 import Lesson from "@/models/lesson";
 import Enrollment from "@/models/enrollment";
 import mongoose from "mongoose";
+import { signCourseAssets, uploadCourseMaterial } from "@/lib/s3";
 
 const fieldMap = {
   title: "title",
@@ -58,6 +59,9 @@ function mapFields(data, reverse = false) {
     mapped.tenantId = data.tenantId;
   }
 
+  // Include materials array
+  if (data.materials) Object.assign(mapped, { materials: data.materials });
+
   // Only include relations/tenantId when sending back to frontend
   if (reverse) {
     if (data.modules) mapped.modules = data.modules;
@@ -90,29 +94,101 @@ export async function GET(req, { params }) {
         ...mod,
         id: mod._id.toString(),
         moduleName: mod.name,
-        lessons: mod.lessons ? mod.lessons.map(les => ({
-          ...les,
-          id: les._id.toString(),
-          desc: les.description || les.content?.text
-        })) : []
+        lessons: mod.lessons ? mod.lessons.map(les => {
+          let url = "";
+          const lType = (les.type || "text").toLowerCase();
+          if (lType === "video") url = les.content?.video?.url;
+          else if (["pdf", "document", "audio"].includes(lType)) url = les.content?.document?.url;
+
+          return {
+            ...les,
+            id: les._id.toString(),
+            desc: les.description || les.content?.text,
+            url: url || les.url
+          };
+        }) : []
       }));
     }
 
-    return NextResponse.json({
+    const result = {
       ...mappedCourse,
       id: populatedCourse._id.toString(),
       _id: populatedCourse._id.toString(),
-    });
+    };
+    const signedResult = await signCourseAssets(result);
+    return NextResponse.json(signedResult);
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
+}
+
+
+
+async function handleRequestData(req, courseId) {
+  const contentType = req.headers.get("content-type") || "";
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await req.formData();
+    const dataString = formData.get("data");
+    const data = dataString ? JSON.parse(dataString) : {};
+
+    // 1. Handle course-level files (thumb and previewVideo)
+    const thumbFile = formData.get("thumb");
+    if (thumbFile && typeof thumbFile !== "string") {
+      const buffer = Buffer.from(await thumbFile.arrayBuffer());
+      data.thumb = await uploadCourseMaterial(buffer, courseId, thumbFile.name, thumbFile.type, "materials");
+    }
+
+    const previewVideoFile = formData.get("previewVideo");
+    if (previewVideoFile && typeof previewVideoFile !== "string") {
+      const buffer = Buffer.from(await previewVideoFile.arrayBuffer());
+      data.previewVideo = await uploadCourseMaterial(buffer, courseId, previewVideoFile.name, previewVideoFile.type, "materials");
+    }
+
+    // 2. Handle lesson-level files
+    // Expecting fields like "lesson_file_0_1" for module index 0, lesson index 1
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith("lesson_file_") && typeof value === 'object' && value.name) {
+        const parts = key.split("_");
+        const mIdx = parseInt(parts[2]);
+        const lIdx = parseInt(parts[3]);
+
+        if (data.modules && data.modules[mIdx] && data.modules[mIdx].lessons && data.modules[mIdx].lessons[lIdx]) {
+          const buffer = Buffer.from(await value.arrayBuffer());
+          const s3Url = await uploadCourseMaterial(buffer, courseId, value.name, value.type, "lessons");
+          data.modules[mIdx].lessons[lIdx].url = s3Url;
+        }
+      }
+
+      // Handle course materials
+      if (key.startsWith("material_file_") && typeof value === 'object' && value.name) {
+        const parts = key.split("_");
+        const idx = parts[2];
+        const buffer = Buffer.from(await value.arrayBuffer());
+        const s3Url = await uploadCourseMaterial(buffer, courseId, value.name, value.type, "materials");
+        const customName = formData.get(`material_name_${idx}`) || value.name;
+        const customDesc = formData.get(`material_desc_${idx}`) || "Course Material";
+
+        data.materials = data.materials || [];
+        data.materials.push({
+          url: s3Url,
+          filename: customName,
+          size: Math.round(value.size / 1024) + " KB",
+          fileType: "OTHER",
+          desc: customDesc
+        });
+      }
+    }
+
+    return data;
+  }
+  return await req.json();
 }
 
 export async function PUT(req, { params }) {
   try {
     await dbConnect();
     const { id } = await params;
-    const data = await req.json();
+    const data = await handleRequestData(req, id);
     const mappedData = mapFields(data);
     const course = await Course.findByIdAndUpdate(id, mappedData, { new: true });
 
@@ -173,7 +249,15 @@ export async function PUT(req, { params }) {
                     order: lid + 1,
                     content: {
                       text: lessonData.desc || lessonData.description,
-                      video: lessonData.url ? { url: lessonData.url } : undefined,
+                      video:
+                        (lessonData.type || "").toLowerCase() === "video"
+                          ? { url: lessonData.url, provider: "upload" }
+                          : undefined,
+                      document: ["pdf", "document", "audio"].includes(
+                        (lessonData.type || "").toLowerCase()
+                      )
+                        ? { url: lessonData.url, filename: lessonData.tempName }
+                        : undefined,
                     },
                     duration: lessonData.duration,
                     thumbnail: lessonData.thumb || lessonData.thumbnail,
@@ -219,19 +303,29 @@ export async function PUT(req, { params }) {
         ...mod,
         id: mod._id.toString(),
         moduleName: mod.name,
-        lessons: mod.lessons ? mod.lessons.map(les => ({
-          ...les,
-          id: les._id.toString(),
-          desc: les.description || les.content?.text
-        })) : []
+        lessons: mod.lessons ? mod.lessons.map(les => {
+          let url = "";
+          const lType = (les.type || "text").toLowerCase();
+          if (lType === "video") url = les.content?.video?.url;
+          else if (["pdf", "document", "audio"].includes(lType)) url = les.content?.document?.url;
+
+          return {
+            ...les,
+            id: les._id.toString(),
+            desc: les.description || les.content?.text,
+            url: url || les.url
+          };
+        }) : []
       }));
     }
 
-    return NextResponse.json({
+    const result = {
       ...mappedCourse,
       id: populatedCourse._id.toString(),
       _id: populatedCourse._id.toString(),
-    });
+    };
+    const signedResult = await signCourseAssets(result);
+    return NextResponse.json(signedResult);
   } catch (err) {
     console.error("PUT error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
