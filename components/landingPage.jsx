@@ -123,11 +123,7 @@ function LandingPage({ ...props }) {
                             )
                         }
                     </div>
-                    <div style={{ display: "flex", gap: 32, marginTop: 48 }}>
-                        {[["500+", "SDPs Trust Us"], ["50K+", "Learners Served"], ["QCTO", "Aligned"]].map(function (pair) {
-                            return <div key={pair[1]}><div style={{ fontSize: 22, fontWeight: 900, color: p }}>{pair[0]}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{pair[1]}</div></div>;
-                        })}
-                    </div>
+
                     <div style={{ marginTop: 40, display: "flex", flexDirection: "row", gap: 16 }}>
                         <div style={{ color: "rgba(255,255,255,0.4)", fontWeight: 600, fontSize: 12, textTransform: "uppercase", letterSpacing: "1px", paddingTop: 15 }}>
                             Connect with us
@@ -177,7 +173,7 @@ function LandingPage({ ...props }) {
                         { icon: "📊", t: "Advanced Analytics", d: "Learner progress & assessment reports" },
                         { icon: "🏆", t: "Digital Certificates", d: "Verifiable with proof links" },
                         { icon: "🤖", t: "AI Course Builder", d: "Generate outlines & quizzes" },
-                        { icon: "⚡", t: "EFT", d: "Instant  EFT — zero transaction fees" },
+                        // { icon: "⚡", t: "EFT", d: "Instant  EFT — zero transaction fees" },
                     ].map(function (f) {
                         return (
                             <div key={f.t} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "18px" }}>

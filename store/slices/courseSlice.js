@@ -27,12 +27,11 @@ export const createCourses = createAsyncThunk(
   "course/createCourse",
   async (courseData, { rejectWithValue }) => {
     try {
+      const isFormData = courseData instanceof FormData;
       const response = await fetch(API_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(courseData),
+        headers: isFormData ? {} : { "Content-Type": "application/json" },
+        body: isFormData ? courseData : JSON.stringify(courseData),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -51,10 +50,11 @@ export const updateCourse = createAsyncThunk(
   "courses/updateCourse",
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
+      const isFormData = updatedData instanceof FormData;
       const response = await fetch(`/api/courses/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedData),
+        headers: isFormData ? {} : { "Content-Type": "application/json" },
+        body: isFormData ? updatedData : JSON.stringify(updatedData),
       });
 
       if (!response.ok) {

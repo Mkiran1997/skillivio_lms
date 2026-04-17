@@ -55,21 +55,21 @@ export async function POST(req) {
 
     const lessonStatus = await LessonStatus.findOneAndUpdate(
       { enrollmentId, lessonId },
-      { 
-        learnerId, 
-        courseId, 
-        status: status || "completed", 
-        progress: progress || {}, 
-        assessment: assessment || {} 
+      {
+        learnerId,
+        courseId,
+        status: status || "completed",
+        progress: progress || {},
+        assessment: assessment || {}
       },
       { new: true, upsert: true }
     );
 
     // Update Enrollment progress if status is completed
     if (status === "completed" || !status) { // Defaulting to completed if not provided, assuming "Mark as Complete" action
-      const completedCount = await LessonStatus.countDocuments({ 
-        enrollmentId, 
-        status: "completed" 
+      const completedCount = await LessonStatus.countDocuments({
+        enrollmentId,
+        status: "completed"
       });
 
       const enrollment = await Enrollment.findById(enrollmentId).populate("courseId");
@@ -85,7 +85,7 @@ export async function POST(req) {
         }
 
         const percentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
-        
+
         await Enrollment.findByIdAndUpdate(enrollmentId, {
           "progress.lessonsCompleted": completedCount,
           "progress.totalLessons": totalLessons,

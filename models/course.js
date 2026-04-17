@@ -128,6 +128,14 @@ const courseSchema = new mongoose.Schema({
     ref: "Module"
   }],
 
+  materials: [{
+    url: String,
+    filename: String,
+    size: String,
+    fileType: { type: String, enum: ["PDF", "PPTX", "XLSX", "DOCX", "OTHER", "ZIP", "MP4"], default: "OTHER" },
+    desc: String
+  }],
+
   tenantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Tenant",
@@ -186,5 +194,9 @@ courseSchema.virtual("moduleCount").get(function () {
 
 courseSchema.set("toJSON", { virtuals: true });
 courseSchema.set("toObject", { virtuals: true });
+
+if (mongoose.models.Course) {
+  delete mongoose.models.Course;
+}
 
 export default mongoose.models.Course || mongoose.model("Course", courseSchema);
