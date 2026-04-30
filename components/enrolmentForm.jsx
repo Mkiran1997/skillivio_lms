@@ -115,20 +115,26 @@ function EnrolmentForm({ ...props }) {
 
 
     useEffect(() => {
-        // Check if a learner is selected
-        if (selectedLearner) {
-            // Find the learner's data from tierLearner
-            const selectedLearnerData = tierLearner.find((learner) => learner._id === selectedLearner);
+        if (!selectedLearner && tierLearner.length > 0) {
+            const firstLearner = tierLearner[0];
 
-            // Update secB.fullName whenever selectedLearner changes
-            if (selectedLearnerData) {
+            if (secB.fullName !== firstLearner.userId.name) {
                 setSecB((prev) => ({
                     ...prev,
-                    fullName: selectedLearnerData.userId.name,  // Set the name based on the selected learner
+                    fullName: firstLearner.userId.name,
+                }));
+            }
+        } else if (selectedLearner) {
+            const selectedLearnerData = tierLearner.find((learner) => learner._id === selectedLearner);
+
+            if (selectedLearnerData && secB.fullName !== selectedLearnerData.userId.name) {
+                setSecB((prev) => ({
+                    ...prev,
+                    fullName: selectedLearnerData.userId.name,
                 }));
             }
         }
-    }, [selectedLearner, tierLearner]); // Dependency on selectedLearner and tierLearner
+    }, [selectedLearner, tierLearner, secB.fullName]);
 
     useEffect(() => {
         if (selectedCourseDetail) {
@@ -160,7 +166,6 @@ function EnrolmentForm({ ...props }) {
     }, [selectedCourseDetail, course]);
 
     function handleSubmit() {
-        console.log(docs);
         // Check for selected learner
         if (!selectedLearner) {
             if (!secB.fullName) {
@@ -169,6 +174,20 @@ function EnrolmentForm({ ...props }) {
                 return;
             }
         }
+
+        if (!secA.saqaId) {
+            notify("SAQA ID required in Section A", "error");
+            setStep("A");
+            return;
+        }
+
+        if (!secA.intakeNo) {
+            notify("Intake number required in Section A", "error");
+            setStep("A");
+            return;
+        }
+
+
 
         // Validate other fields
         if (!secB.idNumber) {

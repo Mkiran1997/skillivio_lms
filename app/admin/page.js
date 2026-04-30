@@ -1,7 +1,7 @@
 "use client"
 import LandingPage from "@/components/landingPage";
 import { fetchtenants } from "@/store/slices/tenantSlice";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { COURSES, TENANTS } from "@/utils/mockData";
 import { useSearchParams } from "next/navigation";
@@ -17,9 +17,11 @@ import AssessmentView from "@/components/assessmentView";
 import CertificateView from "@/components/certificateView";
 import RegisterPage from "@/components/registrationPage";
 import Splash from "@/components/splash";
+import BulkEnrollmentImportStatus from "@/components/bulkEnrollmentImportStatus";
 
 function Admin() {
     const { Course, loading, error } = useSelector((state) => state.course);
+    const bulkImport = useSelector((state) => state?.enrollment?.bulkImport);
     var [currentTenant, setCurrentTenant] = useState("skillivio");
     var [view, setView] = useState("landing");
     var [userRole, setUserRole] = useState(null);
@@ -35,6 +37,50 @@ function Admin() {
     const [selectConditionAndPolicy, setSelectConditionAndPolicy] = useState("");
     const [isClient, setIsClient] = useState(false);
     const [authChecking, setAuthChecking] = useState(true);
+
+
+
+    var [newCourse, setNewCourse] = useState({
+        title: "",
+        cat: "Technology",
+        level: "beginner",
+        nqf: 4,
+        credits: 10,
+        price: "",
+        free: true,
+        desc: "",
+        thumb: "📘",
+        saqaId: "",
+        passingScore: 75,
+        dripEnabled: false,
+        setaAffiliation: "",
+    });
+    var [courseModules, setCourseModules] = useState([]);
+    var [activeModuleIdx, setActiveModuleIdx] = useState(null);
+    var [uploadingForCourse, setUploadingForCourse] = useState(null);
+    var [courseFiles, setCourseFiles] = useState({}); // { courseId: [{name,type,size,uploaded}] }
+    const dispatch = useDispatch();
+    const previousBulkImportStatusRef = useRef("idle");
+
+    const { tenants } = useSelector(state => state.tenants)
+
+
+    const rawTenant =
+        tenants.find((t) => t.slug === currentTenant) || TENANTS[currentTenant];
+
+
+    const tenant = useMemo(() => {
+        if (!rawTenant) return rawTenant;
+
+        return {
+            ...rawTenant,
+            primary: rawTenant.primary || rawTenant.branding?.primary,
+            secondary: rawTenant.secondary || rawTenant.branding?.secondary,
+            accent: rawTenant.accent || rawTenant.branding?.accent,
+            logo: rawTenant.logo || rawTenant.branding?.logo,
+        };
+    }, [rawTenant]);
+
 
     useEffect(() => {
         if (!tenant) return; // 🚨 WAIT until tenant is available
@@ -102,39 +148,16 @@ function Admin() {
         }
     }, []);
 
-    var [newCourse, setNewCourse] = useState({
-        title: "",
-        cat: "Technology",
-        level: "beginner",
-        nqf: 4,
-        credits: 10,
-        price: "",
-        free: true,
-        desc: "",
-        thumb: "📘",
-        saqaId: "",
-        passingScore: 75,
-        dripEnabled: false,
-        setaAffiliation: "",
-    });
-    var [courseModules, setCourseModules] = useState([]);
-    var [activeModuleIdx, setActiveModuleIdx] = useState(null);
-    var [uploadingForCourse, setUploadingForCourse] = useState(null);
-    var [courseFiles, setCourseFiles] = useState({}); // { courseId: [{name,type,size,uploaded}] }
-    const dispatch = useDispatch();
-
-    const { tenants } = useSelector(state => state.tenants)
-
     useEffect(() => {
         dispatch(fetchtenants())
     }, [dispatch]);
 
 
-    var tenant = tenants.find((t) => t.slug === currentTenant) || TENANTS[currentTenant];
+
     useTheme(tenant);
     var p = tenant?.primary,
-        s = tenant.secondary,
-        a = tenant.accent;
+        s = tenant?.secondary,
+        a = tenant?.accent;
 
     function notify(msg, type) {
         setNotification({ msg: msg, type: type || "success" });
@@ -142,6 +165,35 @@ function Admin() {
             setNotification(null);
         }, 3500);
     }
+
+    useEffect(() => {
+        const previousStatus = previousBulkImportStatusRef.current;
+
+        if (previousStatus === "running" && bulkImport?.status === "completed") {
+            if ((bulkImport?.created || 0) > 0) {
+                notify(
+                    `Bulk import complete: ${bulkImport.created} created, ${bulkImport.skipped || 0} skipped.`,
+                    "success",
+                );
+            } else {
+                notify("No enrollments were imported from that file.", "error");
+            }
+        }
+
+        if (previousStatus === "running" && bulkImport?.status === "failed") {
+            notify(
+                bulkImport?.error || "Bulk enrolment import failed.",
+                "error",
+            );
+        }
+
+        previousBulkImportStatusRef.current = bulkImport?.status || "idle";
+    }, [
+        bulkImport?.created,
+        bulkImport?.error,
+        bulkImport?.skipped,
+        bulkImport?.status,
+    ]);
 
     function loginUser(user) {
         setCurrentUser(user);
@@ -548,27 +600,36 @@ function Admin() {
         setView: setView,
     };
 
+    function renderWithImportOverlay(page) {
+        return (
+            <>
+                {page}
+                <BulkEnrollmentImportStatus color={p} />
+            </>
+        );
+    }
+
     if (authChecking) {
         return (
             <Splash />
         );
     }
     if (view === "landing")
-        return (
+        return renderWithImportOverlay(
             <LandingPage {...sharedPortalProps} setCurrentTenant={setCurrentTenant} />
         );
 
     if (view === "contact")
-        return <ContactUsPage {...sharedPortalProps} p={p} s={s} tenant={tenant} setSelectConditionAndPolicy={setSelectConditionAndPolicy}
+        return renderWithImportOverlay(<ContactUsPage {...sharedPortalProps} p={p} s={s} tenant={tenant} setSelectConditionAndPolicy={setSelectConditionAndPolicy}
             view={view}
             setView={setView}
             currentTenant={currentTenant}
-            onBack={function () { setView("landing"); }} />;
+            onBack={function () { setView("landing"); }} />);
 
 
 
     if (view === "login")
-        return (
+        return renderWithImportOverlay(
             <LoginPage
                 onLogin={loginUser}
                 onBack={function () {
@@ -584,7 +645,7 @@ function Admin() {
 
 
     if (view === "register")
-        return (
+        return renderWithImportOverlay(
             <RegisterPage
                 onRegister={registerUser}
                 onBack={function () {
@@ -600,7 +661,7 @@ function Admin() {
         );
 
     if (view === "superadmin")
-        return (
+        return renderWithImportOverlay(
             <SkillivioSuperAdmin
                 {...sharedPortalProps}
                 courses={courses}
@@ -610,7 +671,7 @@ function Admin() {
         );
 
     if (view === "learner")
-        return (
+        return renderWithImportOverlay(
             <LearnerPortal
                 {...sharedPortalProps}
                 courses={courses}
@@ -620,7 +681,7 @@ function Admin() {
         );
 
     if (view === "admin")
-        return (
+        return renderWithImportOverlay(
             <AdminDashboard
                 {...sharedPortalProps}
                 courses={courses}
@@ -646,7 +707,7 @@ function Admin() {
         );
 
     if (view === "course" && activeCourse)
-        return (
+        return renderWithImportOverlay(
             <CoursePlayer
                 currentUser={currentUser}
                 {...sharedPortalProps}
@@ -658,7 +719,7 @@ function Admin() {
         );
 
     if (view === "assessment")
-        return (
+        return renderWithImportOverlay(
             <AssessmentView
                 {...sharedPortalProps}
                 activeCourse={activeCourse}
@@ -667,7 +728,7 @@ function Admin() {
         );
 
     if (view === "certificate")
-        return (
+        return renderWithImportOverlay(
             <CertificateView {...sharedPortalProps} activeCourse={activeCourse} />
         );
 
@@ -683,8 +744,7 @@ function Admin() {
     };
 
 
-
-    return <LandingPage {...props} />;
+    return renderWithImportOverlay(<LandingPage {...props} />);
 
 
 

@@ -198,7 +198,6 @@ export async function POST(req) {
     const mappedData = mapFields(data);
     mappedData._id = courseId; // Assign pre-generated ID
 
-    console.log("mappedData", mappedData);
 
     const course = await Course.create(mappedData);
     if (data.modules && data.modules.length > 0) {
@@ -215,7 +214,6 @@ export async function POST(req) {
           if (moduleData.lessons && moduleData.lessons.length > 0) {
             const lessons = await Promise.all(
               moduleData.lessons.map(async (lessonData, lid) => {
-                console.log("Creating lesson with type:", lessonData.type?.toLowerCase());
                 return await Lesson.create({
                   title: lessonData.title,
                   description: lessonData.desc || lessonData.description,
