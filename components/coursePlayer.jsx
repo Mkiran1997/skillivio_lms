@@ -52,7 +52,6 @@ function CoursePlayer({ ...props }) {
 
     const lessonCount = rawLessons.length;
     const lessons = rawLessons.map((l, i) => {
-        // console.log();
         const lessonId = l._id || l.id;
         const statusEntry = lessonStatus?.find(ls =>
             String(ls.lessonId?._id || ls.lessonId) === String(lessonId) &&
@@ -1058,7 +1057,6 @@ function CoursePlayer({ ...props }) {
                                     }}
                                 >
                                     {cur.url ? (
-                                        console.log(cur.url),
                                         <iframe src={cur.url} style={{ width: "100%", height: "100%" }} title="Iframe Example"></iframe>
 
                                         // <video

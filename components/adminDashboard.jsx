@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { exportXLSX, usePagination } from "@/utils/utility";
-import { ENROLMENT_STORE, LEARNERS } from "@/utils/mockData";
 import { GLOBAL_CSS } from "@/utils/globalCss";
 import AdminSidebar from "./adminSidebar";
 import StatCard from "./statCard";
@@ -14,7 +13,10 @@ import {
   updatebankdetails,
 } from "@/store/slices/bankDetailSlice";
 import * as XLSX from "xlsx";
-import { fetchEnrollment } from "@/store/slices/enrollmentSlice";
+import {
+  fetchEnrollment,
+  importEnrollmentInChunks,
+} from "@/store/slices/enrollmentSlice";
 import EnrolmentForm from "./enrolmentForm";
 import { fetchcontactUs } from "@/store/slices/contactUsSlice";
 import { fetchlessonStatus } from "@/store/slices/lessonStatusSlice";
@@ -62,15 +64,28 @@ function AdminDashboard({ ...props }) {
   const { Course, loading, error } = useSelector((state) => state?.course);
   const { Learners } = useSelector((state) => state?.learners);
   const { bankdetails } = useSelector((state) => state?.bankdetail);
-  const { Enrollment } = useSelector((state) => state?.enrollment);
+  const { Enrollment, bulkImport } = useSelector((state) => state?.enrollment);
   const { lessonStatus } = useSelector((state) => state?.lessonStatus);
   const { contactUs } = useSelector((state) => state?.contactUs);
+  const bulkImporting = bulkImport?.status === "running";
+  const bulkImportSummary = bulkImport?.status === "idle" ? null : bulkImport;
+  const bulkImportPercent =
+    bulkImportSummary?.total > 0
+      ? Math.min(
+        100,
+        Math.round(
+          ((bulkImportSummary?.processed || 0) / bulkImportSummary.total) *
+          100,
+        ),
+      )
+      : 0;
 
   const [isEditing, setIsEditing] = useState(false);
   const [localBankDetails, setLocalBankDetails] = useState({});
   const [openEnrolmentForm, setOpenEnrolmentForm] = useState(false);
   const firstInputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const bulkImportNotificationRef = useRef({ jobId: null, status: null });
   const [selectedLessonType, setSelectedLessonType] = useState("TEXT");
   var [activeLearner, setActiveLearner] = useState(null);
   const [preiewDoc, setPreiewDoc] = useState(null);
@@ -177,7 +192,6 @@ function AdminDashboard({ ...props }) {
     end: "",
   });
   var learnersPag = usePagination(LearnerCourseWise, 6);
-  var enrolments = Object.values(ENROLMENT_STORE);
 
   var published = AdminCourse.filter(function (c) {
     return c?.status === "published";
@@ -186,9 +200,13 @@ function AdminDashboard({ ...props }) {
     return Enrollment.filter(
       (enrol) => enrol?.courseId?.type === currentUser?.tenantId?.slug,
     );
-  });
+  }, [Enrollment, currentUser]);
 
   var enrolPag = usePagination(totalEnrolled, 5);
+
+  const currentTenantId = useMemo(() => {
+    return currentUser?.tenantId?._id || currentUser?.tenantId || null;
+  }, [currentUser]);
 
   var SB_ITEMS = [
     { id: "dashboard", icon: "📊", label: "Dashboard" },
@@ -233,13 +251,46 @@ function AdminDashboard({ ...props }) {
     dispatch(fetchEnrollment());
     dispatch(fetchcontactUs());
     dispatch(fetchlessonStatus());
-  }, [dispatch]);
+  }, [dispatch, Enrollment.length]);
 
   useEffect(() => {
     if (bankdetails && bankdetails[0]) {
       setLocalBankDetails({ ...bankdetails[0] });
     }
   }, [bankdetails]);
+
+  useEffect(() => {
+    const status = bulkImport?.status;
+    const jobId = bulkImport?.jobId;
+
+    if (!jobId || status === "idle" || status === "running") {
+      return;
+    }
+
+    const alreadyNotified =
+      bulkImportNotificationRef.current.jobId === jobId &&
+      bulkImportNotificationRef.current.status === status;
+
+    if (alreadyNotified) {
+      return;
+    }
+
+    if (status === "completed") {
+      notify(
+        `Bulk enrolment import completed. ${bulkImport?.created || 0} created, ${bulkImport?.skipped || 0} skipped.`,
+      );
+    }
+
+    if (status === "failed") {
+      notify(
+        bulkImport?.error ||
+        `Bulk enrolment import failed with ${bulkImport?.failures?.length || 0} error(s).`,
+        "error",
+      );
+    }
+
+    bulkImportNotificationRef.current = { jobId, status };
+  }, [bulkImport, notify]);
 
   const handleSave = () => {
     dispatch(
@@ -307,124 +358,137 @@ function AdminDashboard({ ...props }) {
     notify("Enrolment report exported!");
   }
 
+  function normalizeDateValue(value) {
+    if (!value) return null;
+
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value.toISOString();
+    }
+
+    if (typeof value === "number") {
+      const parsed = XLSX.SSF.parse_date_code(value);
+      if (!parsed) return null;
+
+      return new Date(
+        Date.UTC(
+          parsed.y,
+          parsed.m - 1,
+          parsed.d,
+          parsed.H || 0,
+          parsed.M || 0,
+          parsed.S || 0,
+        ),
+      ).toISOString();
+    }
+
+    const parsedDate = new Date(value);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return parsedDate.toISOString();
+    }
+
+    return null;
+  }
+
+  function downloadBulkEnrolmentTemplate() {
+    exportXLSX(
+      "Bulk_Enrolment_Template.xlsx",
+      [
+        [
+          "Course Title",
+          "Learner Email",
+          "ID Number",
+          "Intake No",
+          "SAQA ID",
+          "Start Date",
+          "End Date",
+          "Mode",
+          "POPIA",
+          "Declaration",
+          "Employer",
+          "Work Address",
+          "Contact Person",
+          "Contact No",
+          "Mentor",
+          "DOB",
+          "Gender",
+          "Nationality",
+          "Address",
+          "Contact",
+        ],
+        [
+          "Project Management Fundamentals",
+          "learner@example.com",
+          "9001015009087",
+          "INT-2026-01",
+          "SAQA-12345",
+          "2026-05-01",
+          "2026-11-30",
+          "Blended",
+          "Yes",
+          "Yes",
+          "Acme Ltd",
+          "1 Main Street, Johannesburg",
+          "Training Manager",
+          "0110000000",
+          "No",
+          "1990-01-01",
+          "Female",
+          "South African",
+          "12 Market Street, Johannesburg",
+          "0820000000",
+        ],
+      ],
+      "Template",
+    );
+    notify("Bulk enrolment template downloaded!");
+  }
+
   const ImportEnrolmentReport = () => {
+    if (bulkImport?.status === "running") return;
     fileInputRef?.current?.click();
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e?.target?.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const data = new Uint8Array(evt.target.result);
+    try {
+      const data = new Uint8Array(await file.arrayBuffer());
       const workbook = XLSX.read(data, { type: "array" });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(sheet);
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" }).map((row) => ({
+        ...row,
+        "Start Date":
+          normalizeDateValue(row["Start Date"]) || row["Start Date"] || "",
+        "End Date": normalizeDateValue(row["End Date"]) || row["End Date"] || "",
+      }));
 
-      rows.forEach((row) => {
-        // Map your Excel columns to secB, secC, etc.
-        const secB = {
-          fullName: row["Full Name"] || "",
-          idNumber: row["ID Number"] || "",
-          dob: row["DOB"] || "",
-          gender: row["Gender"] || "",
-          nationality: row["Nationality"] || "South African",
-          address: row["Address"] || "",
-          contact: row["Contact"] || "",
-          email: row["Email"] || "",
-        };
+      if (!currentTenantId || !currentUser?.tenantId?.slug) {
+        notify("Tenant context is missing. Please refresh and try again.", "error");
+        return;
+      }
 
-        const secC = {
-          employer: row["Employer"] || "",
-          workAddress: row["Work Address"] || "",
-          contactPerson: row["Contact Person"] || "",
-          contactNo: row["Contact No"] || "",
-          mentor: row["Mentor"] || "No",
-        };
+      if (!rows.length) {
+        notify("The selected spreadsheet is empty.", "error");
+        return;
+      }
 
-        const secA = {
-          saqaId: row["SAQA ID"] || "",
-          nqfLevel: AdminCourse.nqf,
-          credits: AdminCourse.credits,
-          intakeNo: row["Intake No"] || "",
-          startDate:
-            row["Start Date"] || new Date().toISOString().split("T")[0],
-          endDate: row["End Date"] || "",
-          mode: row["Mode"] || "Blended",
-        };
-
-        const secD = [
-          { req: "Certified ID Copy", sub: "N", verBy: "", date: "" },
-          { req: "Highest Qualification", sub: "N", verBy: "", date: "" },
-          { req: "Pre-requisite Qualification", sub: "N", verBy: "", date: "" },
-          {
-            req: "Study Permit (if applicable)",
-            sub: "N",
-            verBy: "",
-            date: "",
-          },
-          { req: "Workplace Confirmation", sub: "N", verBy: "", date: "" },
-        ];
-
-        const secE = {
-          conducted: "No",
-          dateCond: "",
-          outcome: "Competent - Approved",
-          assessor: "",
-          sig: "",
-        };
-        const secF = {
-          name: "",
-          sig: "",
-          date: new Date().toISOString().split("T")[0],
-          agreed: false,
-        };
-        const secG = {
-          consent: false,
-          sig: "",
-          date: new Date().toISOString().split("T")[0],
-        };
-        const secH = {
-          verified: "No",
-          approved: "No",
-          qctoDate: "",
-          repName: "",
-          sig: "",
-          date: new Date().toISOString().split("T")[0],
-        };
-        const docs = {
-          certifiedId: null,
-          highestQual: null,
-          cv: null,
-          studyPermit: null,
-          workplaceConf: null,
-          entryAssessment: null,
-        };
-
-        const record = {
-          Course,
-          secA,
-          secB,
-          secC,
-          secD,
-          secE,
-          secF,
-          secG,
-          secH,
-          docs,
-          submittedAt: new Date().toISOString(),
-        };
-        const key = secB?.idNumber + "_" + Course?.id;
-
-        ENROLMENT_STORE[key] = record;
-      });
-
-      notify(` learners imported successfully!`);
-    };
-
-    reader.readAsArrayBuffer(file);
+      dispatch(
+        importEnrollmentInChunks({
+          fileName: file.name,
+          rows,
+          currentTenantId,
+          currentTenantSlug: currentUser?.tenantId?.slug,
+          currentUserName: currentUser?.name || "",
+        }),
+      );
+    } catch (error) {
+      console.error("Bulk enrolment import failed:", error);
+      notify(error?.message || "Bulk enrolment import failed.", "error");
+    } finally {
+      e.target.value = "";
+    }
   };
 
   // for learner Import
@@ -1750,7 +1814,7 @@ function AdminDashboard({ ...props }) {
                 <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
                   Upload downloadable resources like PDFs, PPTs, or ZIP files for learners.
                 </div>
-                
+
                 <input
                   type="file"
                   multiple
@@ -1768,7 +1832,7 @@ function AdminDashboard({ ...props }) {
                   }}
                   style={{ marginBottom: 12 }}
                 />
-                
+
                 {/* List chosen files to upload */}
                 {newCourse?.materialsFiles && newCourse.materialsFiles.length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1786,10 +1850,10 @@ function AdminDashboard({ ...props }) {
                             style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontWeight: 700 }}
                           >✕ Remove</button>
                         </div>
-                        
+
                         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
                           <div>
-                            <input 
+                            <input
                               style={{ ...css.input, padding: "8px 12px", fontSize: 12 }}
                               placeholder="Material Title (Optional Override)"
                               value={mObj.name}
@@ -1804,7 +1868,7 @@ function AdminDashboard({ ...props }) {
                             />
                           </div>
                           <div>
-                            <textarea 
+                            <textarea
                               style={{ ...css.input, padding: "8px 12px", fontSize: 12, minHeight: 50 }}
                               placeholder="Description (Optional)"
                               value={mObj.desc}
@@ -1823,7 +1887,7 @@ function AdminDashboard({ ...props }) {
                     ))}
                   </div>
                 )}
-                
+
                 {/* Existing DB Materials (if editing) */}
                 {editingCourse && editingCourse.materials && editingCourse.materials.length > 0 && (
                   <div style={{ marginTop: 16, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
@@ -2422,7 +2486,6 @@ function AdminDashboard({ ...props }) {
                       totalCredits: 0,
                     };
 
-                    console.log(currentUser)
                     return (
                       <tr
                         key={learner?.id}
@@ -2755,6 +2818,21 @@ function AdminDashboard({ ...props }) {
                 >
                   📊 Export Report (.xlsx)
                 </button>
+                <button
+                  onClick={downloadBulkEnrolmentTemplate}
+                  style={{
+                    background: "#0f766e15",
+                    color: "#217346",
+                    border: "1px solid #0f766e30",
+                    borderRadius: 8,
+                    padding: "10px 18px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  ⬇ Template
+                </button>
                 <>
                   <input
                     type="file"
@@ -2765,6 +2843,7 @@ function AdminDashboard({ ...props }) {
                   />
                   <button
                     onClick={ImportEnrolmentReport}
+                    disabled={bulkImporting}
                     style={{
                       background: "#21734615",
                       color: "#217346",
@@ -2773,13 +2852,90 @@ function AdminDashboard({ ...props }) {
                       padding: "10px 18px",
                       fontSize: 13,
                       fontWeight: 600,
-                      cursor: "pointer",
+                      cursor: bulkImporting ? "not-allowed" : "pointer",
+                      opacity: bulkImporting ? 0.7 : 1,
                     }}
                   >
-                    📊 Bulk Import (.xlsx)
+                    {bulkImporting
+                      ? "Importing Enrolments..."
+                      : "📊 Bulk Import (.xlsx)"}
                   </button>
                 </>
               </div>
+            </div>
+            <div
+              style={{
+                marginBottom: 16,
+                padding: "12px 16px",
+                borderRadius: 10,
+                border: "1px solid #e2e8f0",
+                background: "#f8fafc",
+              }}
+            >
+              <div
+                style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}
+              >
+                Import columns
+              </div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
+                Required: `Course Title` or `Course ID`, plus `Learner Email`
+                or `ID Number`, and `Intake No`. Optional fields like `SAQA
+                ID`, `Start Date`, `End Date`, `Mode`, `POPIA`, and
+                `Declaration` are supported too.
+              </div>
+              {bulkImportSummary && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    paddingTop: 10,
+                    borderTop: "1px solid #e2e8f0",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {bulkImporting ? "Importing now:" : "Last import:"}{" "}
+                    {bulkImportSummary.fileName}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
+                    {bulkImportSummary.processed || 0} processed of{" "}
+                    {bulkImportSummary.total || 0} rows ({bulkImportPercent}%).
+                  </div>
+                  <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
+                    {bulkImportSummary.created || 0} created,{" "}
+                    {bulkImportSummary.skipped || 0} skipped
+                    
+                    .
+                  </div>
+                  {bulkImportSummary.failures?.length > 0 && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#991b1b",
+                        marginTop: 6,
+                        whiteSpace: "pre-line",
+                      }}
+                    >
+                      {bulkImportSummary.failures.join("\n")}
+                    </div>
+                  )}
+                  {bulkImportSummary.error && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#991b1b",
+                        marginTop: 6,
+                      }}
+                    >
+                      {bulkImportSummary.error}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             {Enrollment?.length === 0 ? (
               <div
