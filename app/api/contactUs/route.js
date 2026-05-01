@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongoose";
 import ContactUs from "@/models/contactUs";
-import { sendContactUsEmail } from "@/lib/nodemailer";
+import { sendContactUsEmail } from "@/lib/email";
 
 export async function GET(req) {
   try {
