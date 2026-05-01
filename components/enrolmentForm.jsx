@@ -8,6 +8,14 @@ import { fetchUsers } from "@/store/slices/authSlice";
 import { fetchlearners } from "@/store/slices/learnerSlice";
 
 
+const DUPLICATE_ENROLLMENT_MESSAGE = "Learner already enroll in this course";
+
+function normalizeId(value) {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return String(value?._id || value?.id || value);
+}
+
 
 function F(fp) {
     var label = fp.label, val = fp.val, onChange = fp.onChange, type = fp.type || "text", options = fp.options, required = fp.required;
@@ -117,6 +125,7 @@ function EnrolmentForm({ ...props }) {
     useEffect(() => {
         if (!selectedLearner && tierLearner.length > 0) {
             const firstLearner = tierLearner[0];
+            setSelectedLearner(firstLearner._id);
 
             if (secB.fullName !== firstLearner.userId.name) {
                 setSecB((prev) => ({
@@ -165,7 +174,7 @@ function EnrolmentForm({ ...props }) {
         }
     }, [selectedCourseDetail, course]);
 
-    function handleSubmit() {
+    async function handleSubmit() {
         // Check for selected learner
         if (!selectedLearner) {
             if (!secB.fullName) {
@@ -216,6 +225,40 @@ function EnrolmentForm({ ...props }) {
 
         // Retrieve the selected learner data based on selectedLearner
         const selectedLearnerData = Learners.find((learner) => learner._id === selectedLearner);
+        const learnerRecord = course
+            ? Learners.find(
+                (learner) =>
+                    normalizeId(learner?.userId) === normalizeId(learnerUser?._id),
+            )
+            : selectedLearnerData;
+        const finalCourseId = course ? course._id : (selectedCourseDetail?._id || selectedCourse);
+        const finalLearnerId = learnerRecord?._id;
+
+        if (!finalCourseId) {
+            setSubmitting(false);
+            notify("Please select a course", "error");
+            setStep("A");
+            return;
+        }
+
+        if (!finalLearnerId) {
+            setSubmitting(false);
+            notify("Please select a learner", "error");
+            setStep("B");
+            return;
+        }
+
+        const hasDuplicateEnrollment = Enrollment.some(
+            (enrollment) =>
+                normalizeId(enrollment?.courseId) === normalizeId(finalCourseId) &&
+                normalizeId(enrollment?.learnerId) === normalizeId(finalLearnerId),
+        );
+
+        if (hasDuplicateEnrollment) {
+            setSubmitting(false);
+            notify(DUPLICATE_ENROLLMENT_MESSAGE, "error");
+            return;
+        }
 
 
         // // If the learner is not found, show an error
@@ -227,8 +270,8 @@ function EnrolmentForm({ ...props }) {
 
         // Construct the enrollment record
         const enrollmentRecord = {
-            courseId: course ? course._id : selectedCourseDetail?._id,
-            learnerId: course ? Learners.find((learner) => learner.userId?._id === learnerUser?._id)?._id : selectedLearnerData?._id,
+            courseId: finalCourseId,
+            learnerId: finalLearnerId,
             tenantId: learnerUser?.tenantId?._id || learnerUser?.tenantId,
             saqaId: secA.saqaId,
             intakeNo: secA.intakeNo,
@@ -237,7 +280,7 @@ function EnrolmentForm({ ...props }) {
             mode: secA.mode,
             personal: {
                 ...secB,
-                fullname: course ? secB.fullName : (selectedLearnerData?.userId?.name || secB.fullName),
+                fullname: course ? secB.fullName : (learnerRecord?.userId?.name || secB.fullName),
             },
             employment: { ...secC },
             enteyRequest: [...secD],
@@ -272,14 +315,23 @@ function EnrolmentForm({ ...props }) {
             }
         });
 
-        // Dispatch the FormData
-        dispatch(createEnrollment(formData));
-
-        // Handle submission feedback
-        setTimeout(() => {
+        try {
+            const createdEnrollment = await dispatch(createEnrollment(formData)).unwrap();
             setSubmitting(false);
-            onSubmit(enrollmentRecord);
-        }, 1500); // Slightly longer for file uploads
+            onSubmit(createdEnrollment || enrollmentRecord);
+        } catch (error) {
+            setSubmitting(false);
+
+            const errorMessage = error?.error || error?.message || "Unable to submit enrolment.";
+            const duplicateEnrollment =
+                error?.status === 409 ||
+                errorMessage.toLowerCase().includes("already enrolled");
+
+            notify(
+                duplicateEnrollment ? DUPLICATE_ENROLLMENT_MESSAGE : errorMessage,
+                "error",
+            );
+        }
     }
 
     function SH(sp) {
