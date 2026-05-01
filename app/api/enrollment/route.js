@@ -103,6 +103,18 @@ export async function POST(req) {
       return NextResponse.json({ error: "tenantId is required (could not be derived from auth)" }, { status: 400 });
     }
 
+    const existingEnrollment = await Enrollment.findOne({
+      courseId: finalCourseId,
+      learnerId,
+    }).lean();
+
+    if (existingEnrollment) {
+      return NextResponse.json(
+        { error: "Learner is already enrolled in this course" },
+        { status: 409 },
+      );
+    }
+
     const enrollmentData = {
       courseId: finalCourseId,
       learnerId,
@@ -167,7 +179,7 @@ export async function POST(req) {
         entryAssessmentRecord: typeof (documents?.entryAssessmentRecord || docs?.entryAssessment) === "string" ? (documents?.entryAssessmentRecord || docs?.entryAssessment) : null,
         proofOfPayment: typeof (documents?.proofOfPayment || docs?.proofOfPayment) === "string" ? (documents?.proofOfPayment || docs?.proofOfPayment) : null,
       },
-      status: "draft",
+      status: data.status || "draft",
     };
 
     const enrollment = new Enrollment(enrollmentData);

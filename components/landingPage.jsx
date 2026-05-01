@@ -21,8 +21,8 @@ function LandingPage({ ...props }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {
                         currentTenant === "skillivio" ?
-                            <img src='/logo/skillivioLogo.jpeg' alt={tenant.logo} style={{ width: 38, height: 38, objectFit: "contain", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
-                            : <img src={tenant?.logo} alt={tenant?.name[0]} style={{ width: 38, height: 38, background: p, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
+                            <img src='/logo/skillivioLogo.jpeg' alt={tenant.logo} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
+                            : <img src={tenant?.logo} alt={tenant?.name[0]} style={{ width: 40, height: 40, objectFit: "cover", background: p, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 16 }} />
 
                     }
                     <div>
